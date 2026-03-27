@@ -1,0 +1,130 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshMarket — Каталог товаров</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <button class="hamburger" id="hamburger" aria-label="Открыть меню" aria-expanded="false" aria-controls="navMenu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+
+                <a href="main.html" class="logo">Fresh<span>Market</span></a>
+
+                <ul class="nav-menu" id="navMenu">
+                    <li><a href="main.html"   class="nav-link" data-page="home">Главная</a></li>
+                    <li><a href="catalog.html" class="nav-link" data-page="catalog">Каталог</a></li>
+                    <li><a href="main.html#about"    class="nav-link" data-section="about">О нас</a></li>
+                    <li><a href="main.html#contacts" class="nav-link" data-section="contacts">Контакты</a></li>
+                </ul>
+
+                <div class="nav-actions">
+                    <a href="#" id="adminLink" class="btn-admin" onclick="goToAdmin(); return false;">Админ</a>
+                    <span id="userInfo" style="display:none; font-weight:600; color:var(--text);"></span>
+                    <button id="logoutBtn" onclick="logout()" class="btn-login" style="display:none;">Выйти</button>
+                    <a href="login.html" id="loginLink" class="btn-login">Войти</a>
+                    <div class="cart-icon" id="cartBtn" role="button" tabindex="0" aria-label="Корзина">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M9 2L6 7H3L5 20H19L21 7H18L15 2H9Z"/>
+                            <path d="M9 11V17M15 11V17"/>
+                        </svg>
+                        <span class="cart-count" id="cartCount">0</span>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="catalog-page">
+        <div class="container">
+            <div class="catalog-header">
+                <h1 class="section-title">Каталог</h1>
+
+                <!-- Единый блок фильтров -->
+                <div class="filters-block">
+                    <div class="filters-top">
+                        <div class="search-box">
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <circle cx="11" cy="11" r="8"/>
+                                <path d="m21 21-4.35-4.35"/>
+                            </svg>
+                            <input type="text" id="searchInput" placeholder="Поиск товаров..." aria-label="Поиск товаров">
+                        </div>
+
+                        <div class="results-count" aria-live="polite">
+                            Найдено: <span id="resultsCount">0</span>
+                        </div>
+                    </div>
+
+                    <div class="filters-bottom">
+                        <div class="filter-group">
+                            <label class="filter-label" for="categoryFilter">Категория:</label>
+                            <select class="filter-select" id="categoryFilter">
+                                <option value="all">Все категории</option>
+                                <option value="dairy">🥛 Молочные</option>
+                                <option value="fruits">🍎 Фрукты</option>
+                                <option value="bakery">🍞 Бакалея</option>
+                                <option value="drinks">☕ Напитки</option>
+                            </select>
+                        </div>
+
+                        <div class="filter-group">
+                            <label class="filter-label" for="priceFrom">Цена:</label>
+                            <div class="price-inputs">
+                                <input type="number" class="price-input" id="priceFrom" placeholder="От"  min="0" aria-label="Цена от">
+                                <span class="price-separator" aria-hidden="true">—</span>
+                                <input type="number" class="price-input" id="priceTo"   placeholder="До"  min="0" aria-label="Цена до">
+                                <span class="price-currency" aria-hidden="true">₽</span>
+                            </div>
+                        </div>
+
+                        <button class="reset-filters" id="resetFilters" type="button">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                                <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 12"/>
+                                <path d="M3 3v9h9"/>
+                            </svg>
+                            Сбросить
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Сетка товаров -->
+            <section class="products-grid" id="productsGrid" aria-label="Список товаров"></section>
+
+            <!-- Пустое состояние -->
+            <div class="empty-state" id="emptyState" style="display:none;" role="status">
+                <span class="empty-emoji" aria-hidden="true">🔍</span>
+                <h3>Ничего не найдено</h3>
+                <p>Попробуйте изменить параметры поиска или сбросить фильтры</p>
+                <button class="btn btn-secondary" type="button" onclick="resetFilters()">Сбросить фильтры</button>
+            </div>
+        </div>
+    </main>
+
+    <!-- Cart Modal -->
+    <div class="modal" id="cartModal" role="dialog" aria-modal="true" aria-labelledby="cartModalTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="cartModalTitle">Ваша корзина</h2>
+                <button class="close" aria-label="Закрыть корзину">×</button>
+            </div>
+            <div class="cart-items" id="cartItems"></div>
+            <div class="cart-footer">
+                <div class="total">Итого: <span id="cartTotal">0 ₽</span></div>
+                <button class="btn-checkout" onclick="checkout()">Оформить доставку</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

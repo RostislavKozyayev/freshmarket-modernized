@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshMarket — Регистрация</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body class="login-page">
+    <div class="login-container">
+        <div class="login-header">
+            <a href="main.html" class="logo">Fresh<span>Market</span></a>
+            <h1>Регистрация</h1>
+        </div>
+
+        <div class="error-message" id="errorMessage" role="alert"></div>
+        <div class="success-message" id="successMessage" role="status"></div>
+
+        <form id="registerForm" class="login-form" novalidate>
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/>
+                        <circle cx="12" cy="7" r="4"/>
+                    </svg>
+                    <input type="text" id="regName" placeholder="Ваше имя"
+                           required autocomplete="name">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/>
+                        <polyline points="22,6 12,13 2,6"/>
+                    </svg>
+                    <input type="email" id="regEmail" placeholder="Email"
+                           required autocomplete="email">
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    <input type="password" id="regPassword" placeholder="Пароль"
+                           required autocomplete="new-password">
+                    <button type="button" class="toggle-password"
+                            onclick="toggleRegPassword('regPassword', this)">Показать</button>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <div class="input-wrapper">
+                    <svg class="input-icon" width="20" height="20" viewBox="0 0 24 24"
+                         fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"/>
+                    </svg>
+                    <input type="password" id="regPasswordConfirm" placeholder="Повторите пароль"
+                           required autocomplete="new-password">
+                    <button type="button" class="toggle-password"
+                            onclick="toggleRegPassword('regPasswordConfirm', this)">Показать</button>
+                </div>
+            </div>
+
+            <button type="submit" class="btn-login-submit">Зарегистрироваться</button>
+        </form>
+
+        <div class="register-link">
+            Уже есть аккаунт? <a href="login.html">Войти</a>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FreshMarket — Свежие продукты за 15 минут</title>
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+</head>
+<body>
+    <header class="header">
+        <div class="container">
+            <nav class="nav">
+                <button class="hamburger" id="hamburger" aria-label="Открыть меню" aria-expanded="false" aria-controls="navMenu">
+                    <span></span>
+                    <span></span>
+                    <span></span>
+                </button>
+
+                <a href="main.html" class="logo">Fresh<span>Market</span></a>
+
+                <ul class="nav-menu" id="navMenu">
+                    <li><a href="#home"       class="nav-link" data-page="home">Главная</a></li>
+                    <li><a href="catalog.html" class="nav-link" data-page="catalog">Каталог</a></li>
+                    <li><a href="#about"      class="nav-link" data-section="about">О нас</a></li>
+                    <li><a href="#contacts"   class="nav-link" data-section="contacts">Контакты</a></li>
+                </ul>
+
+                <div class="nav-actions">
+                    <a href="#" id="adminLink" class="btn-admin" onclick="goToAdmin(); return false;">Админ</a>
+                    <span id="userInfo" style="display:none; font-weight:600; color:var(--text);"></span>
+                    <button id="logoutBtn" onclick="logout()" class="btn-login" style="display:none;">Выйти</button>
+                    <a href="login.html" id="loginLink" class="btn-login">Войти</a>
+                    <div class="cart-icon" id="cartBtn" role="button" tabindex="0" aria-label="Корзина">
+                        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+                            <path d="M9 2L6 7H3L5 20H19L21 7H18L15 2H9Z"/>
+                            <path d="M9 11V17M15 11V17"/>
+                        </svg>
+                        <span class="cart-count" id="cartCount">0</span>
+                    </div>
+                </div>
+            </nav>
+        </div>
+    </header>
+
+    <main class="hero" id="home">
+        <div class="container">
+            <div class="hero-content">
+                <span class="hero-badge">🚀 Быстрая доставка</span>
+                <h1>Свежие продукты <span class="highlight">за 15 минут</span></h1>
+                <p>Доставка свежих овощей, фруктов и молочных продуктов прямо к вашей двери. Быстро, удобно и качественно.</p>
+                <div class="hero-buttons">
+                    <a href="catalog.html" class="btn btn-primary">Перейти к покупкам</a>
+                    <button class="btn btn-secondary" onclick="showMore()">Узнать больше</button>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="floating-items">
+                    <div class="item item-1">🍎</div>
+                    <div class="item item-2">🥛</div>
+                    <div class="item item-3">🧀</div>
+                    <div class="item item-4">🥑</div>
+                    <div class="item item-5">🍞</div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <section class="about" id="about">
+        <div class="container">
+            <h2 class="section-title">О нас</h2>
+            <div class="about-content">
+                <div class="about-text">
+                    <p>FreshMarket — это современный сервис доставки свежих продуктов, который ценит ваше время и заботится о качестве.</p>
+                    <p>Мы работаем напрямую с фермерами и проверенными поставщиками, чтобы вы получали только самые свежие продукты.</p>
+                    <div class="features">
+                        <div class="feature">
+                            <span class="feature-icon">⚡</span>
+                            <div>
+                                <h4>Быстрая доставка</h4>
+                                <p>Доставим заказ в течение 15 минут</p>
+                            </div>
+                        </div>
+                        <div class="feature">
+                            <span class="feature-icon">🌿</span>
+                            <div>
+                                <h4>Свежие продукты</h4>
+                                <p>Только качественные и свежие товары</p>
+                            </div>
+                        </div>
+                        <div class="feature">
+                            <span class="feature-icon">💳</span>
+                            <div>
+                                <h4>Удобная оплата</h4>
+                                <p>Оплата картой или наличными</p>
+                            </div>
+                        </div>
+                        <div class="feature">
+                            <span class="feature-icon">📱</span>
+                            <div>
+                                <h4>Мобильное приложение</h4>
+                                <p>Заказывайте в пару кликов</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="about-image">
+                    <div class="about-visual">
+                        <span class="big-emoji">🛒</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="contacts" id="contacts">
+        <div class="container">
+            <div class="contacts-content">
+                <div class="contacts-info">
+                    <h2 class="section-title">Контакты</h2>
+                    <div class="contact-items">
+                        <div class="contact-item">
+                            <span class="contact-icon">📍</span>
+                            <div>
+                                <h4>Адрес</h4>
+                                <p>г. Москва, ул. Примерная, д. 15</p>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <span class="contact-icon">📞</span>
+                            <div>
+                                <h4>Телефон</h4>
+                                <p>+7 (999) 123-45-67</p>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <span class="contact-icon">📧</span>
+                            <div>
+                                <h4>Email</h4>
+                                <p>info@freshmarket.ru</p>
+                            </div>
+                        </div>
+                        <div class="contact-item">
+                            <span class="contact-icon">🕐</span>
+                            <div>
+                                <h4>Режим работы</h4>
+                                <p>Ежедневно с 8:00 до 22:00</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="contacts-form">
+                    <h3>Напишите нам</h3>
+                    <form class="contact-form">
+                        <input type="text"  placeholder="Ваше имя"      required>
+                        <input type="email" placeholder="Ваш email"      required>
+                        <textarea           placeholder="Ваше сообщение" rows="4" required></textarea>
+                        <button type="submit" class="btn btn-primary">Отправить</button>
+                    </form>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2026 FreshMarket. Все права защищены.</p>
+            </div>
+        </div>
+    </footer>
+
+    <!-- Cart Modal -->
+    <div class="modal" id="cartModal" role="dialog" aria-modal="true" aria-labelledby="cartModalTitle">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2 id="cartModalTitle">Ваша корзина</h2>
+                <button class="close" aria-label="Закрыть корзину">×</button>
+            </div>
+            <div class="cart-items" id="cartItems"></div>
+            <div class="cart-footer">
+                <div class="total">Итого: <span id="cartTotal">0 ₽</span></div>
+                <button class="btn-checkout" onclick="checkout()">Оформить доставку</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
