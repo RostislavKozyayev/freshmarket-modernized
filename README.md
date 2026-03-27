@@ -25,6 +25,7 @@ FreshMarket — это сервис быстрой доставки свежих
 
 ## 📁 Структура проекта
 
+```text
 freshmarket-modernized/
 ├── server.js # Серверная часть (Node.js)
 ├── database.sql # SQL-скрипт создания БД
@@ -39,6 +40,7 @@ freshmarket-modernized/
 ├── package.json # Зависимости Node.js
 ├── .gitignore # Исключения для Git
 └── README.md # Документация
+```
 
 
 ## 👥 Команда проекта
