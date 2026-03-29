@@ -60,6 +60,10 @@ db.serialize(() => {
         FOREIGN KEY (product_id) REFERENCES products(id)
     )`);
 
+    // Создаём админа
+    db.run(`INSERT OR IGNORE INTO users (email, password, role) 
+        VALUES ('admin@freshmarket.ru', 'admin123', 'admin')`);
+
     // 2. ЗАГРУЗКА ДАННЫХ
     console.log('📦 Загрузка товаров...');
     

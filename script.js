@@ -33,8 +33,22 @@ document.addEventListener('DOMContentLoaded', () => {
     setupPageNavigation();
     setupScrollSpy();
     handleAnchorScroll();
-    loadProducts();
+
+    // ✅ Инициализация админ-панели (если мы на admin.html)
+    const currentPage = window.location.pathname.split('/').pop() || 'main.html';
+    if (currentPage === 'admin.html') {
+        if (checkAdminAccess()) {
+            setTimeout(() => {
+                updateStats();
+                loadAdminProducts();
+                loadAdminOrders();
+            }, 500);
+        }
+        return;
+    }
+
     if (elements.productsGrid) {
+        loadProducts();
         filterProducts();
     }
 });
@@ -405,30 +419,39 @@ function closeModal() {
 /* ===== AUTH (API) ===== */
 async function handleLogin(e) {
     e.preventDefault();
-    const email = document.getElementById('email').value;
+    const email    = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
-    const role  = document.querySelector('.role-btn.active')?.dataset.role || 'customer';
+    const role     = document.querySelector('.role-btn.active')?.dataset.role || 'customer';
+    const errorDiv = document.getElementById('errorMessage');
+
+    if (!email || !password) {
+        if (errorDiv) { errorDiv.textContent = '⚠️ Введите email и пароль'; errorDiv.classList.add('show'); }
+        return;
+    }
+    if (errorDiv) errorDiv.classList.remove('show');
 
     try {
-        const response = await fetch(`${API_URL}/login`, {
+        const response = await fetch('http://localhost:3000/api/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password, role })
         });
         const result = await response.json();
+
         if (result.success) {
             localStorage.setItem('isLoggedIn', 'true');
             localStorage.setItem('userRole',   result.user.role);
             localStorage.setItem('userEmail',  result.user.email);
-            showNotification('Вход выполнен успешно');
-            setTimeout(() => {
-                window.location.href = result.user.role === 'admin' ? 'admin.html' : 'main.html';
-            }, 1000);
+            window.location.href = result.user.role === 'admin' ? 'admin.html' : 'main.html';
         } else {
-            showNotification(result.message || 'Ошибка входа', 'error');
+            const msg = result.message || 'Неверный логин или пароль';
+            if (errorDiv) { errorDiv.textContent = '⚠️ ' + msg; errorDiv.classList.add('show'); }
+            else showNotification(msg, 'error');
         }
     } catch (error) {
-        showNotification('Ошибка сети', 'error');
+        const msg = 'Ошибка сети. Проверьте, запущен ли сервер';
+        if (errorDiv) { errorDiv.textContent = '⚠️ ' + msg; errorDiv.classList.add('show'); }
+        else showNotification(msg, 'error');
     }
 }
 
@@ -448,11 +471,12 @@ window.toggleRegPassword = (inputId, btn) => {
     btn.textContent = isText ? 'Показать' : 'Скрыть';
 };
 
-/* ===== REGISTER FORM ===== */
+/* ===== REGISTER FORM (API) ===== */
 (function setupRegisterForm() {
     const form = document.getElementById('registerForm');
     if (!form) return;
-    form.addEventListener('submit', function (e) {
+    
+    form.addEventListener('submit', async function (e) {
         e.preventDefault();
 
         const name      = document.getElementById('regName').value.trim();
@@ -481,14 +505,31 @@ window.toggleRegPassword = (inputId, btn) => {
             return;
         }
 
-        localStorage.setItem('isLoggedIn', 'true');
-        localStorage.setItem('userRole',   'customer');
-        localStorage.setItem('userEmail',  email);
+        try {
+            const response = await fetch('http://localhost:3000/api/register', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, password, role: 'customer' })
+            });
+            const result = await response.json();
+            
+            if (result.success) {
+                localStorage.setItem('isLoggedIn', 'true');
+                localStorage.setItem('userRole',   'customer');
+                localStorage.setItem('userEmail',  email);
 
-        successDiv.textContent = '✅ Регистрация прошла успешно! Перенаправляем...';
-        successDiv.classList.add('show');
+                successDiv.textContent = '✅ Регистрация прошла успешно! Перенаправляем...';
+                successDiv.classList.add('show');
 
-        setTimeout(() => { window.location.href = 'main.html'; }, 1500);
+                setTimeout(() => { window.location.href = 'main.html'; }, 1500);
+            } else {
+                errorDiv.textContent = '⚠️ ' + (result.message || 'Ошибка регистрации');
+                errorDiv.classList.add('show');
+            }
+        } catch (error) {
+            errorDiv.textContent = '⚠️ Ошибка сети. Проверьте, запущен ли сервер';
+            errorDiv.classList.add('show');
+        }
     });
 })();
 
@@ -599,23 +640,51 @@ function setupHeroAnimation() {
 }
 
 /* ===== ADMIN PANEL (API) ===== */
-function showAdminSection(section) {
-    const productsSection = document.getElementById('productsSection');
-    const ordersSection   = document.getElementById('ordersSection');
-    if (!productsSection || !ordersSection) return;
-    productsSection.style.display = section === 'products' ? 'block' : 'none';
-    ordersSection.style.display   = section === 'orders'   ? 'block' : 'none';
-
-    if (section === 'products') renderAdminProducts();
-    else if (section === 'orders') loadAdminOrders();
+function checkAdminAccess() {
+    const isLoggedIn = localStorage.getItem('isLoggedIn');
+    const userRole = localStorage.getItem('userRole');
+    
+    if (isLoggedIn !== 'true' || userRole !== 'admin') {
+        showNotification('Доступ запрещён! Только для администраторов', 'error');
+        setTimeout(() => { window.location.href = 'main.html'; }, 1500);
+        return false;
+    }
+    return true;
 }
 
-function renderAdminProducts() {
+async function loadAdminProducts() {
+    try {
+        const response = await fetch('http://localhost:3000/api/products');
+        if (!response.ok) throw new Error('Server error');
+        const products = await response.json();
+        renderAdminProducts(products);
+    } catch (error) {
+        console.error('Ошибка загрузки товаров:', error);
+        const tbody = document.getElementById('productsTableBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text-muted)">Не удалось загрузить товары. Проверьте, запущен ли сервер.</td></tr>';
+        }
+    }
+}
+
+function renderAdminProducts(products) {
     const tbody = document.getElementById('productsTableBody');
     if (!tbody) return;
+    
+    if (products.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text-muted)">Товары отсутствуют</td></tr>';
+        updateStats();
+        return;
+    }
+    
     tbody.innerHTML = products.map(p => `
         <tr>
-            <td><div class="product-cell"><div class="product-emoji">${p.emoji}</div><span class="product-name">${p.name}</span></div></td>
+            <td>
+                <div class="product-cell">
+                    <div class="product-emoji">${p.emoji || '📦'}</div>
+                    <span class="product-name">${p.name}</span>
+                </div>
+            </td>
             <td>${p.price} ₽</td>
             <td><span class="stock-status stock-in">В наличии</span></td>
             <td>
@@ -626,24 +695,34 @@ function renderAdminProducts() {
             </td>
         </tr>
     `).join('');
-
-    const total = document.getElementById('totalProducts');
-    if (total) total.textContent = products.length;
+    
+    updateStats();
 }
 
 async function loadAdminOrders() {
     try {
-        const response = await fetch(`${API_URL}/orders`);
+        const response = await fetch('http://localhost:3000/api/orders');
         const orders = await response.json();
-        renderAdminOrdersFromAPI(orders);
+        renderAdminOrders(orders);
     } catch (error) {
         console.error('Ошибка загрузки заказов:', error);
+        const tbody = document.getElementById('ordersTableBody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Не удалось загрузить заказы</td></tr>';
+        }
     }
 }
 
-function renderAdminOrdersFromAPI(orders) {
+function renderAdminOrders(orders) {
     const tbody = document.getElementById('ordersTableBody');
     if (!tbody) return;
+    
+    if (orders.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Заказы отсутствуют</td></tr>';
+        updateStats();
+        return;
+    }
+    
     tbody.innerHTML = orders.map(o => `
         <tr>
             <td>#${o.id}</td>
@@ -654,35 +733,67 @@ function renderAdminOrdersFromAPI(orders) {
                     <option value="new" ${o.status === 'new' ? 'selected' : ''}>Новый</option>
                     <option value="processing" ${o.status === 'processing' ? 'selected' : ''}>В обработке</option>
                     <option value="delivered" ${o.status === 'delivered' ? 'selected' : ''}>Доставлен</option>
+                    <option value="cancelled" ${o.status === 'cancelled' ? 'selected' : ''}>Отменён</option>
                 </select>
             </td>
-            <td>${new Date(o.created_at).toLocaleDateString()}</td>
+            <td>${new Date(o.created_at).toLocaleDateString('ru-RU')}</td>
             <td><button class="action-btn edit" onclick="viewOrder(${o.id})">Просмотр</button></td>
         </tr>
     `).join('');
+    
+    updateStats();
 }
 
-/* ===== ADMIN: ADD PRODUCT (API) ===== */
+function updateStats() {
+    const totalProducts = document.getElementById('totalProducts');
+    const todayOrders = document.getElementById('todayOrders');
+    const revenue = document.getElementById('revenue');
+    
+    if (totalProducts) {
+        fetch('http://localhost:3000/api/products')
+            .then(res => res.json())
+            .then(products => {
+                totalProducts.textContent = products.length;
+            });
+    }
+    
+    if (todayOrders || revenue) {
+        fetch('http://localhost:3000/api/orders')
+            .then(res => res.json())
+            .then(orders => {
+                const today = new Date().toDateString();
+                const todayOrdersCount = orders.filter(o => new Date(o.created_at).toDateString() === today).length;
+                const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
+                
+                if (todayOrders) todayOrders.textContent = todayOrdersCount;
+                if (revenue) revenue.textContent = `${totalRevenue} ₽`;
+            });
+    }
+}
+
 window.openAddProductModal = async () => {
     const name = prompt('Название товара:');
     if (!name) return;
+    
     const price = parseFloat(prompt('Цена:'));
     if (isNaN(price)) { showNotification('Некорректная цена', 'error'); return; }
+    
     const emoji = prompt('Эмодзи (например 🍎):', '📦');
-    const category = prompt('Категория (fruits, dairy, bakery, drinks):', 'other');
+    const category = prompt('Категория (fruits, dairy, bakery, drinks, other):', 'other');
     const weight = prompt('Вес:', '1 шт');
     const stock = parseInt(prompt('Количество на складе:', '10'));
-
+    
     try {
-        const response = await fetch(`${API_URL}/products`, {
+        const response = await fetch('http://localhost:3000/api/products', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ name, price, emoji, category, weight, stock })
         });
         const result = await response.json();
+        
         if (result.success) {
             showNotification('Товар добавлен');
-            loadProducts();
+            loadAdminProducts();
         } else {
             showNotification('Ошибка при добавлении', 'error');
         }
@@ -691,17 +802,23 @@ window.openAddProductModal = async () => {
     }
 };
 
-/* ===== ADMIN: EDIT PRODUCT (API) ===== */
 window.editProduct = async (id) => {
-    const product = products.find(p => p.id === id);
-    if (!product) return;
-    const newName = prompt('Новое название:', product.name);
-    if (!newName) return;
-    const newPrice = parseFloat(prompt('Новая цена:', product.price));
-    if (isNaN(newPrice)) { showNotification('Некорректная цена', 'error'); return; }
-
     try {
-        const response = await fetch(`${API_URL}/products/${id}`, {
+        const response = await fetch('http://localhost:3000/api/products');
+        const products = await response.json();
+        const product = products.find(p => p.id === id);
+        
+        if (!product) { showNotification('Товар не найден', 'error'); return; }
+        
+        const newName = prompt('Новое название:', product.name);
+        if (!newName) return;
+        
+        const newPrice = parseFloat(prompt('Новая цена:', product.price));
+        if (isNaN(newPrice)) { showNotification('Некорректная цена', 'error'); return; }
+        
+        const newStock = parseInt(prompt('Новое количество на складе:', product.stock || '0'));
+        
+        const responseUpdate = await fetch(`http://localhost:3000/api/products/${id}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ 
@@ -710,13 +827,14 @@ window.editProduct = async (id) => {
                 emoji: product.emoji, 
                 category: product.category, 
                 weight: product.weight, 
-                stock: product.stock 
+                stock: newStock 
             })
         });
-        const result = await response.json();
+        const result = await responseUpdate.json();
+        
         if (result.success) {
             showNotification('Товар обновлён');
-            loadProducts();
+            loadAdminProducts();
         } else {
             showNotification('Ошибка при обновлении', 'error');
         }
@@ -725,15 +843,16 @@ window.editProduct = async (id) => {
     }
 };
 
-/* ===== ADMIN: DELETE PRODUCT (API) ===== */
 window.deleteProduct = async (id) => {
-    if (!confirm('Удалить товар?')) return;
+    if (!confirm('Удалить товар? Это действие нельзя отменить.')) return;
+    
     try {
-        const response = await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
+        const response = await fetch(`http://localhost:3000/api/products/${id}`, { method: 'DELETE' });
         const result = await response.json();
+        
         if (result.success) {
             showNotification('Товар удалён');
-            loadProducts();
+            loadAdminProducts();
         } else {
             showNotification('Ошибка при удалении', 'error');
         }
@@ -742,15 +861,15 @@ window.deleteProduct = async (id) => {
     }
 };
 
-/* ===== ADMIN: UPDATE ORDER STATUS (API) ===== */
 window.updateOrderStatus = async (orderId, status) => {
     try {
-        const response = await fetch(`${API_URL}/orders/${orderId}/status`, {
+        const response = await fetch(`http://localhost:3000/api/orders/${orderId}/status`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ status })
         });
         const result = await response.json();
+        
         if (result.success) {
             showNotification('Статус заказа обновлён');
         } else {
@@ -761,8 +880,26 @@ window.updateOrderStatus = async (orderId, status) => {
     }
 };
 
-window.viewOrder = (orderId) => {
-    alert(`Заказ #${orderId}\n\nДетали заказа будут показаны здесь.`);
+window.viewOrder = async (orderId) => {
+    try {
+        const response = await fetch('http://localhost:3000/api/orders');
+        const orders = await response.json();
+        const order = orders.find(o => o.id === orderId);
+        
+        if (!order) { showNotification('Заказ не найден', 'error'); return; }
+        
+        alert(`Заказ #${order.id}\n\nКлиент: ${order.customer || 'Гость'}\nСумма: ${order.total} ₽\nСтатус: ${order.status}\nДата: ${new Date(order.created_at).toLocaleString('ru-RU')}`);
+    } catch (error) {
+        showNotification('Ошибка загрузки заказа', 'error');
+    }
+};
+
+window.logout = () => {
+    localStorage.removeItem('userRole');
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userEmail');
+    showNotification('Выход выполнен');
+    setTimeout(() => { window.location.href = 'main.html'; }, 1000);
 };
 
 /* ===== LOCAL STORAGE ===== */
@@ -780,13 +917,9 @@ function loadCartFromStorage() {
 
 /* ===== NOTIFICATIONS ===== */
 function showNotification(message, type = 'success') {
-    if (type === 'error') {
-        alert('⚠️ ' + message);
-        return;
-    }
     const notification = document.createElement('div');
-    notification.className   = 'toast-notification';
-    notification.textContent = '✅ ' + message;
+    notification.className   = 'toast-notification' + (type === 'error' ? ' toast-error' : '');
+    notification.textContent = (type === 'error' ? '❌ ' : '✅ ') + message;
     document.body.appendChild(notification);
 
     notification.getBoundingClientRect();
@@ -795,10 +928,10 @@ function showNotification(message, type = 'success') {
     setTimeout(() => {
         notification.classList.remove('toast-visible');
         notification.addEventListener('transitionend', () => notification.remove());
-    }, 3000);
+    }, 3500);
 }
 
 /* ===== ANIMATION STYLES (injected once) ===== */
 const animStyle = document.createElement('style');
-animStyle.textContent = `.toast-notification { position: fixed; top: 100px; right: 20px; background: var(--primary); color: #fff; padding: 14px 22px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.18); z-index: 10000; font-weight: 600; font-size: 15px; transform: translateX(440px); transition: transform .35s cubic-bezier(.175,.885,.32,1.275), opacity .35s ease; opacity: 0; max-width: calc(100vw - 40px); } .toast-visible { transform: translateX(0); opacity: 1; }`;
+animStyle.textContent = `.toast-notification { position: fixed; top: 100px; right: 20px; background: var(--primary); color: #fff; padding: 14px 22px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.18); z-index: 10000; font-weight: 600; font-size: 15px; transform: translateX(440px); transition: transform .35s cubic-bezier(.175,.885,.32,1.275), opacity .35s ease; opacity: 0; max-width: calc(100vw - 40px); } .toast-notification.toast-error { background: #e53e3e; } .toast-visible { transform: translateX(0); opacity: 1; }`;
 document.head.appendChild(animStyle);
