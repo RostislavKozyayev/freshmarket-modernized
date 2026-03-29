@@ -1,19 +1,8 @@
+/* ===== API CONFIG ===== */
+const API_URL = 'http://localhost:3000/api';
+
 /* ===== DATA & STATE ===== */
 let products = [];
-
-async function loadProducts() {
-    try {
-        const response = await fetch('http://localhost:3000/api/products');
-        products = await response.json();
-        if (elements.productsGrid) filterProducts();
-    } catch (error) {
-        console.error('Ошибка загрузки товаров:', error);
-        // Fallback: используем заглушки если сервер недоступен
-        products = [/* ваши старые данные */];
-        if (elements.productsGrid) filterProducts();
-    }
-}
-
 let cart = [];
 
 /* ===== DOM ELEMENT CACHE ===== */
@@ -45,9 +34,6 @@ document.addEventListener('DOMContentLoaded', () => {
     setupScrollSpy();
     handleAnchorScroll();
     loadProducts();
-
-    // Если открыт каталог — отрисовываем товары через filterProducts,
-    // чтобы сразу обновился счётчик и пустое состояние.
     if (elements.productsGrid) {
         filterProducts();
     }
@@ -73,14 +59,13 @@ function setupHamburger() {
     const hamburger = document.getElementById('hamburger');
     const navMenu   = document.querySelector('.nav-menu');
     if (!hamburger || !navMenu) return;
-
+    
     hamburger.addEventListener('click', () => {
         const isOpen = navMenu.classList.toggle('open');
         hamburger.classList.toggle('open', isOpen);
         hamburger.setAttribute('aria-expanded', String(isOpen));
     });
 
-    // Закрываем меню при клике по ссылке
     navMenu.querySelectorAll('a').forEach(link => {
         link.addEventListener('click', () => {
             navMenu.classList.remove('open');
@@ -89,7 +74,6 @@ function setupHamburger() {
         });
     });
 
-    // Закрываем меню при клике вне его
     document.addEventListener('click', (e) => {
         if (!hamburger.contains(e.target) && !navMenu.contains(e.target)) {
             navMenu.classList.remove('open');
@@ -115,7 +99,6 @@ function handleAnchorScroll() {
 function setupPageNavigation() {
     const currentPage = window.location.pathname.split('/').pop() || 'main.html';
     const hash = window.location.hash;
-
     elements.navLinks.forEach(link => link.classList.remove('active'));
 
     if (currentPage === 'main.html' || currentPage === 'index.html' || currentPage === '') {
@@ -137,7 +120,7 @@ function setActiveLink(sectionId) {
         const dataSection = link.getAttribute('data-section');
         const dataPage    = link.getAttribute('data-page');
         const href        = link.getAttribute('href') || '';
-
+        
         if (
             dataSection === sectionId ||
             href === '#' + sectionId ||
@@ -155,7 +138,6 @@ function setActiveLink(sectionId) {
 function setupScrollSpy() {
     const currentPage = window.location.pathname.split('/').pop() || 'main.html';
     if (currentPage !== 'main.html' && currentPage !== 'index.html' && currentPage !== '') return;
-
     const sections = document.querySelectorAll('main, section, footer');
 
     function updateActiveLink() {
@@ -169,9 +151,9 @@ function setupScrollSpy() {
             if (!id) return;
             const top = section.offsetTop;
 
-            if (id === 'about'    && scrollPos >= top - 100) current = 'about';
-            else if (id === 'contacts' && scrollPos >= top)  current = 'contacts';
-            else if (scrollPos >= top && scrollPos < top + section.offsetHeight) current = id;
+            if (id === 'about'     && scrollPos >= top - 100) current = 'about';
+            else if (id === 'contacts'  && scrollPos >= top)  current = 'contacts';
+            else if (scrollPos >= top  && scrollPos < top + section.offsetHeight) current = id;
         });
 
         if (scrollPos + windowHeight >= docHeight - 20) current = 'contacts';
@@ -182,7 +164,7 @@ function setupScrollSpy() {
             const dataSection = link.getAttribute('data-section');
             const dataPage    = link.getAttribute('data-page');
 
-            if (dataPage === 'home' && current === 'home')       link.classList.add('active');
+            if (dataPage === 'home'  && current === 'home')       link.classList.add('active');
             else if (dataSection === current)                      link.classList.add('active');
             else if (href.includes('#' + current))                 link.classList.add('active');
         });
@@ -191,7 +173,6 @@ function setupScrollSpy() {
     window.addEventListener('scroll', updateActiveLink);
     setTimeout(updateActiveLink, 200);
 
-    // Плавный скролл для якорных ссылок
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
         anchor.addEventListener('click', function (e) {
             const href = this.getAttribute('href');
@@ -206,10 +187,21 @@ function setupScrollSpy() {
     });
 }
 
-/* ===== PRODUCT DISPLAY ===== */
+/* ===== PRODUCT DISPLAY (API) ===== */
+async function loadProducts() {
+    try {
+        const response = await fetch(`${API_URL}/products`);
+        products = await response.json();
+        if (elements.productsGrid) filterProducts();
+        if (document.getElementById('productsTableBody')) renderAdminProducts();
+    } catch (error) {
+        console.error('Ошибка загрузки товаров:', error);
+        showNotification('Не удалось загрузить товары', 'error');
+    }
+}
+
 function displayProducts(productsToDisplay) {
     if (!elements.productsGrid) return;
-
     elements.productsGrid.innerHTML = productsToDisplay.map(product => `
         <div class="product-card">
             <div class="product-img">${product.emoji}</div>
@@ -228,7 +220,7 @@ function setupFilters() {
     const priceFrom      = document.getElementById('priceFrom');
     const priceTo        = document.getElementById('priceTo');
     const resetBtn       = document.getElementById('resetFilters');
-
+    
     if (searchInput)    searchInput.addEventListener('input',    debounce(filterProducts, 300));
     if (categoryFilter) categoryFilter.addEventListener('change', filterProducts);
     if (priceFrom)      priceFrom.addEventListener('input',      debounce(filterProducts, 300));
@@ -241,7 +233,7 @@ function filterProducts() {
     const activeCategory = document.getElementById('categoryFilter')?.value               || 'all';
     const minPrice       = parseFloat(document.getElementById('priceFrom')?.value)        || 0;
     const maxPrice       = parseFloat(document.getElementById('priceTo')?.value)          || Infinity;
-
+    
     const filtered = products.filter(product => {
         const matchesSearch   = product.name.toLowerCase().includes(searchTerm);
         const matchesCategory = activeCategory === 'all' || product.category === activeCategory;
@@ -263,7 +255,6 @@ function toggleEmptyState(isEmpty) {
     const emptyState   = document.getElementById('emptyState');
     const productsGrid = document.getElementById('productsGrid');
     if (!emptyState || !productsGrid) return;
-
     emptyState.style.display   = isEmpty ? 'block' : 'none';
     productsGrid.style.display = isEmpty ? 'none'  : 'grid';
 }
@@ -273,7 +264,7 @@ window.resetFilters = () => {
     const categoryFilter = document.getElementById('categoryFilter');
     const priceFrom      = document.getElementById('priceFrom');
     const priceTo        = document.getElementById('priceTo');
-
+    
     if (searchInput)    searchInput.value    = '';
     if (categoryFilter) categoryFilter.value = 'all';
     if (priceFrom)      priceFrom.value      = '';
@@ -295,7 +286,6 @@ function debounce(func, wait) {
 window.addToCart = (id) => {
     const product = products.find(p => p.id === id);
     if (!product) return;
-
     const existing = cart.find(item => item.id === id);
     if (existing) {
         existing.quantity += 1;
@@ -317,7 +307,6 @@ window.removeFromCart = (id) => {
 window.updateQuantity = (id, change) => {
     const item = cart.find(item => item.id === id);
     if (!item) return;
-
     item.quantity += change;
     if (item.quantity <= 0) {
         removeFromCart(id);
@@ -335,7 +324,6 @@ function updateCartUI() {
 
 function renderCartItems() {
     if (!elements.cartItems) return;
-
     if (cart.length === 0) {
         elements.cartItems.innerHTML = '<p style="text-align:center;padding:40px;color:var(--text-muted)">Корзина пуста</p>';
         if (elements.cartTotal) elements.cartTotal.textContent = '0 ₽';
@@ -367,17 +355,38 @@ function renderCartItems() {
     if (elements.cartTotal) elements.cartTotal.textContent = `${total} ₽`;
 }
 
-window.checkout = () => {
+/* ===== CHECKOUT (API) ===== */
+window.checkout = async () => {
     if (cart.length === 0) {
         showNotification('Корзина пуста!', 'error');
         return;
     }
     const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    alert(`Заказ оформлен!\n\nСумма заказа: ${total} ₽\n\nСпасибо за покупку!`);
-    cart = [];
-    updateCartUI();
-    saveCartToStorage();
-    closeModal();
+    const email = localStorage.getItem('userEmail') || 'guest@example.com';
+    
+    try {
+        const response = await fetch(`${API_URL}/orders`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                userId: 1,
+                items: cart,
+                total: total
+            })
+        });
+        const result = await response.json();
+        if (result.success) {
+            alert(`Заказ оформлен!\n\nСумма заказа: ${total} ₽\nID заказа: ${result.orderId}\n\nСпасибо за покупку!`);
+            cart = [];
+            updateCartUI();
+            saveCartToStorage();
+            closeModal();
+        } else {
+            showNotification('Ошибка оформления заказа', 'error');
+        }
+    } catch (error) {
+        showNotification('Ошибка сети', 'error');
+    }
 };
 
 /* ===== MODAL ===== */
@@ -393,17 +402,34 @@ function closeModal() {
     document.body.style.overflow     = '';
 }
 
-/* ===== AUTH ===== */
-function handleLogin(e) {
+/* ===== AUTH (API) ===== */
+async function handleLogin(e) {
     e.preventDefault();
     const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
     const role  = document.querySelector('.role-btn.active')?.dataset.role || 'customer';
 
-    localStorage.setItem('isLoggedIn', 'true');
-    localStorage.setItem('userRole',   role);
-    localStorage.setItem('userEmail',  email);
-
-    window.location.href = role === 'admin' ? 'admin.html' : 'main.html';
+    try {
+        const response = await fetch(`${API_URL}/login`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password, role })
+        });
+        const result = await response.json();
+        if (result.success) {
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('userRole',   result.user.role);
+            localStorage.setItem('userEmail',  result.user.email);
+            showNotification('Вход выполнен успешно');
+            setTimeout(() => {
+                window.location.href = result.user.role === 'admin' ? 'admin.html' : 'main.html';
+            }, 1000);
+        } else {
+            showNotification(result.message || 'Ошибка входа', 'error');
+        }
+    } catch (error) {
+        showNotification('Ошибка сети', 'error');
+    }
 }
 
 window.togglePassword = () => {
@@ -414,7 +440,6 @@ window.togglePassword = () => {
     if (toggle) toggle.textContent = isText ? 'Показать' : 'Скрыть';
 };
 
-/* Generic toggle for register page (multiple password fields) */
 window.toggleRegPassword = (inputId, btn) => {
     const input = document.getElementById(inputId);
     if (!input) return;
@@ -427,7 +452,6 @@ window.toggleRegPassword = (inputId, btn) => {
 (function setupRegisterForm() {
     const form = document.getElementById('registerForm');
     if (!form) return;
-
     form.addEventListener('submit', function (e) {
         e.preventDefault();
 
@@ -457,7 +481,6 @@ window.toggleRegPassword = (inputId, btn) => {
             return;
         }
 
-        /* Stub: сохраняем пользователя и перенаправляем на главную */
         localStorage.setItem('isLoggedIn', 'true');
         localStorage.setItem('userRole',   'customer');
         localStorage.setItem('userEmail',  email);
@@ -473,7 +496,7 @@ function checkAuth() {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     const email      = localStorage.getItem('userEmail');
     const userRole   = localStorage.getItem('userRole');
-
+    
     if (elements.userInfo && elements.logoutBtn && elements.loginLink) {
         if (isLoggedIn === 'true') {
             elements.userInfo.textContent  = email || '';
@@ -503,7 +526,6 @@ window.logout = () => {
 window.goToAdmin = () => {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     const userRole   = localStorage.getItem('userRole');
-
     if (isLoggedIn !== 'true') {
         showNotification('Сначала войдите в систему!', 'error');
         setTimeout(() => { window.location.href = 'login.html'; }, 1500);
@@ -524,7 +546,6 @@ window.showMore = () => {
 function setupEventListeners() {
     if (elements.cartBtn)  elements.cartBtn.addEventListener('click', openModal);
     if (elements.closeBtn) elements.closeBtn.addEventListener('click', closeModal);
-
     window.addEventListener('click', (e) => {
         if (e.target === elements.cartModal) closeModal();
     });
@@ -554,7 +575,6 @@ function setupHeroAnimation() {
     const heroVisual = document.querySelector('.hero-visual');
     const items      = document.querySelectorAll('.item');
     if (!heroVisual || window.innerWidth <= 992) return;
-
     let trackingEnabled = false;
     setTimeout(() => { trackingEnabled = true; }, 2000);
 
@@ -578,23 +598,21 @@ function setupHeroAnimation() {
     });
 }
 
-/* ===== ADMIN PANEL ===== */
+/* ===== ADMIN PANEL (API) ===== */
 function showAdminSection(section) {
     const productsSection = document.getElementById('productsSection');
     const ordersSection   = document.getElementById('ordersSection');
     if (!productsSection || !ordersSection) return;
-
     productsSection.style.display = section === 'products' ? 'block' : 'none';
     ordersSection.style.display   = section === 'orders'   ? 'block' : 'none';
 
     if (section === 'products') renderAdminProducts();
-    else if (section === 'orders') renderAdminOrders();
+    else if (section === 'orders') loadAdminOrders();
 }
 
 function renderAdminProducts() {
     const tbody = document.getElementById('productsTableBody');
     if (!tbody) return;
-
     tbody.innerHTML = products.map(p => `
         <tr>
             <td><div class="product-cell"><div class="product-emoji">${p.emoji}</div><span class="product-name">${p.name}</span></div></td>
@@ -602,7 +620,7 @@ function renderAdminProducts() {
             <td><span class="stock-status stock-in">В наличии</span></td>
             <td>
                 <div class="action-buttons">
-                    <button class="action-btn edit"   onclick="editProduct(${p.id})">Редактировать</button>
+                    <button class="action-btn edit" onclick="editProduct(${p.id})">Редактировать</button>
                     <button class="action-btn delete" onclick="deleteProduct(${p.id})">Удалить</button>
                 </div>
             </td>
@@ -613,72 +631,134 @@ function renderAdminProducts() {
     if (total) total.textContent = products.length;
 }
 
-function renderAdminOrders() {
+async function loadAdminOrders() {
+    try {
+        const response = await fetch(`${API_URL}/orders`);
+        const orders = await response.json();
+        renderAdminOrdersFromAPI(orders);
+    } catch (error) {
+        console.error('Ошибка загрузки заказов:', error);
+    }
+}
+
+function renderAdminOrdersFromAPI(orders) {
     const tbody = document.getElementById('ordersTableBody');
     if (!tbody) return;
-
-    const orders = [
-        { id: 1001, client: 'Иванов И.И.',   total: 1250, status: 'new',        date: '23.03.2026' },
-        { id: 1002, client: 'Петрова А.С.',  total: 890,  status: 'processing', date: '23.03.2026' },
-        { id: 1003, client: 'Сидоров М.В.',  total: 2100, status: 'delivered',  date: '22.03.2026' },
-    ];
-
     tbody.innerHTML = orders.map(o => `
         <tr>
             <td>#${o.id}</td>
-            <td>${o.client}</td>
+            <td>${o.customer || 'Гость'}</td>
             <td>${o.total} ₽</td>
             <td>
                 <select class="order-status" onchange="updateOrderStatus(${o.id}, this.value)">
-                    <option value="new"        ${o.status === 'new'        ? 'selected' : ''}>Новый</option>
+                    <option value="new" ${o.status === 'new' ? 'selected' : ''}>Новый</option>
                     <option value="processing" ${o.status === 'processing' ? 'selected' : ''}>В обработке</option>
-                    <option value="delivered"  ${o.status === 'delivered'  ? 'selected' : ''}>Доставлен</option>
+                    <option value="delivered" ${o.status === 'delivered' ? 'selected' : ''}>Доставлен</option>
                 </select>
             </td>
-            <td>${o.date}</td>
+            <td>${new Date(o.created_at).toLocaleDateString()}</td>
             <td><button class="action-btn edit" onclick="viewOrder(${o.id})">Просмотр</button></td>
         </tr>
     `).join('');
 }
 
-window.editProduct = (id) => {
-    const product = products.find(p => p.id === id);
-    if (!product) return;
-    const newName = prompt('Новое название:', product.name);
-    if (newName) {
-        product.name = newName;
-        renderAdminProducts();
-        showNotification('Товар обновлён');
-    }
-};
-
-window.deleteProduct = (id) => {
-    if (!confirm('Удалить товар?')) return;
-    const index = products.findIndex(p => p.id === id);
-    if (index > -1) {
-        products.splice(index, 1);
-        renderAdminProducts();
-        displayProducts(products);
-        showNotification('Товар удалён');
-    }
-};
-
-window.openAddProductModal = () => {
-    const name  = prompt('Название товара:');
+/* ===== ADMIN: ADD PRODUCT (API) ===== */
+window.openAddProductModal = async () => {
+    const name = prompt('Название товара:');
     if (!name) return;
     const price = parseFloat(prompt('Цена:'));
     if (isNaN(price)) { showNotification('Некорректная цена', 'error'); return; }
     const emoji = prompt('Эмодзи (например 🍎):', '📦');
+    const category = prompt('Категория (fruits, dairy, bakery, drinks):', 'other');
+    const weight = prompt('Вес:', '1 шт');
+    const stock = parseInt(prompt('Количество на складе:', '10'));
 
-    products.push({ id: Date.now(), name, price, emoji: emoji || '📦', category: 'other', weight: '1 шт' });
-    renderAdminProducts();
-    displayProducts(products);
-    showNotification('Товар добавлен');
+    try {
+        const response = await fetch(`${API_URL}/products`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name, price, emoji, category, weight, stock })
+        });
+        const result = await response.json();
+        if (result.success) {
+            showNotification('Товар добавлен');
+            loadProducts();
+        } else {
+            showNotification('Ошибка при добавлении', 'error');
+        }
+    } catch (error) {
+        showNotification('Ошибка сети', 'error');
+    }
 };
 
-window.updateOrderStatus = (orderId, status) => {
-    console.log(`Order ${orderId} status → ${status}`);
-    showNotification('Статус заказа обновлён');
+/* ===== ADMIN: EDIT PRODUCT (API) ===== */
+window.editProduct = async (id) => {
+    const product = products.find(p => p.id === id);
+    if (!product) return;
+    const newName = prompt('Новое название:', product.name);
+    if (!newName) return;
+    const newPrice = parseFloat(prompt('Новая цена:', product.price));
+    if (isNaN(newPrice)) { showNotification('Некорректная цена', 'error'); return; }
+
+    try {
+        const response = await fetch(`${API_URL}/products/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+                name: newName, 
+                price: newPrice, 
+                emoji: product.emoji, 
+                category: product.category, 
+                weight: product.weight, 
+                stock: product.stock 
+            })
+        });
+        const result = await response.json();
+        if (result.success) {
+            showNotification('Товар обновлён');
+            loadProducts();
+        } else {
+            showNotification('Ошибка при обновлении', 'error');
+        }
+    } catch (error) {
+        showNotification('Ошибка сети', 'error');
+    }
+};
+
+/* ===== ADMIN: DELETE PRODUCT (API) ===== */
+window.deleteProduct = async (id) => {
+    if (!confirm('Удалить товар?')) return;
+    try {
+        const response = await fetch(`${API_URL}/products/${id}`, { method: 'DELETE' });
+        const result = await response.json();
+        if (result.success) {
+            showNotification('Товар удалён');
+            loadProducts();
+        } else {
+            showNotification('Ошибка при удалении', 'error');
+        }
+    } catch (error) {
+        showNotification('Ошибка сети', 'error');
+    }
+};
+
+/* ===== ADMIN: UPDATE ORDER STATUS (API) ===== */
+window.updateOrderStatus = async (orderId, status) => {
+    try {
+        const response = await fetch(`${API_URL}/orders/${orderId}/status`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status })
+        });
+        const result = await response.json();
+        if (result.success) {
+            showNotification('Статус заказа обновлён');
+        } else {
+            showNotification('Ошибка при обновлении статуса', 'error');
+        }
+    } catch (error) {
+        showNotification('Ошибка сети', 'error');
+    }
 };
 
 window.viewOrder = (orderId) => {
@@ -704,13 +784,11 @@ function showNotification(message, type = 'success') {
         alert('⚠️ ' + message);
         return;
     }
-
     const notification = document.createElement('div');
     notification.className   = 'toast-notification';
     notification.textContent = '✅ ' + message;
     document.body.appendChild(notification);
 
-    // Trigger reflow for animation
     notification.getBoundingClientRect();
     notification.classList.add('toast-visible');
 
@@ -722,28 +800,5 @@ function showNotification(message, type = 'success') {
 
 /* ===== ANIMATION STYLES (injected once) ===== */
 const animStyle = document.createElement('style');
-animStyle.textContent = `
-    .toast-notification {
-        position: fixed;
-        top: 100px;
-        right: 20px;
-        background: var(--primary);
-        color: #fff;
-        padding: 14px 22px;
-        border-radius: 12px;
-        box-shadow: 0 10px 30px rgba(0,0,0,.18);
-        z-index: 10000;
-        font-weight: 600;
-        font-size: 15px;
-        transform: translateX(440px);
-        transition: transform .35s cubic-bezier(.175,.885,.32,1.275),
-                    opacity .35s ease;
-        opacity: 0;
-        max-width: calc(100vw - 40px);
-    }
-    .toast-visible {
-        transform: translateX(0);
-        opacity: 1;
-    }
-`;
+animStyle.textContent = `.toast-notification { position: fixed; top: 100px; right: 20px; background: var(--primary); color: #fff; padding: 14px 22px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.18); z-index: 10000; font-weight: 600; font-size: 15px; transform: translateX(440px); transition: transform .35s cubic-bezier(.175,.885,.32,1.275), opacity .35s ease; opacity: 0; max-width: calc(100vw - 40px); } .toast-visible { transform: translateX(0); opacity: 1; }`;
 document.head.appendChild(animStyle);

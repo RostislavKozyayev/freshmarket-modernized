@@ -10,17 +10,16 @@ const PORT = 3000;
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static(path.join(__dirname))); // Раздача статических файлов (HTML, CSS, JS)
+app.use(express.static(path.join(__dirname)));
 
-// Подключение к SQLite (файл создастся автоматически)
+// Подключение к SQLite
 const db = new sqlite3.Database('./freshmarket.db', (err) => {
     if (err) console.error('❌ Ошибка подключения к БД:', err);
     else console.log('✅ Подключено к базе данных freshmarket.db');
 });
 
-// ===== СОЗДАНИЕ ТАБЛИЦ (если их нет) =====
+// Создание таблиц (если нет)
 db.serialize(() => {
-    // Таблица пользователей
     db.run(`CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         email TEXT UNIQUE NOT NULL,
@@ -30,7 +29,6 @@ db.serialize(() => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
 
-    // Таблица товаров
     db.run(`CREATE TABLE IF NOT EXISTS products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -41,7 +39,6 @@ db.serialize(() => {
         stock INTEGER DEFAULT 0
     )`);
 
-    // Таблица заказов
     db.run(`CREATE TABLE IF NOT EXISTS orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
@@ -51,7 +48,6 @@ db.serialize(() => {
         FOREIGN KEY (user_id) REFERENCES users(id)
     )`);
 
-    // Таблица позиций заказа
     db.run(`CREATE TABLE IF NOT EXISTS order_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         order_id INTEGER,
@@ -65,7 +61,7 @@ db.serialize(() => {
 
 // ===== API ENDPOINTS =====
 
-// 📦 Получить все товары
+// 📦 GET /api/products - Получить все товары
 app.get('/api/products', (req, res) => {
     db.all('SELECT * FROM products', [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
@@ -73,80 +69,94 @@ app.get('/api/products', (req, res) => {
     });
 });
 
-// 🔐 Авторизация (упрощённая для учебной практики)
+// 📦 POST /api/products - Добавить товар (Admin)
+app.post('/api/products', (req, res) => {
+    const { name, price, emoji, category, weight, stock } = req.body;
+    db.run(
+        `INSERT INTO products (name, price, emoji, category, weight, stock) VALUES (?, ?, ?, ?, ?, ?)`,
+        [name, price, emoji, category, weight, stock || 0],
+        function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, id: this.lastID });
+        }
+    );
+});
+
+// 📦 PUT /api/products/:id - Обновить товар (Admin)
+app.put('/api/products/:id', (req, res) => {
+    const { name, price, emoji, category, weight, stock } = req.body;
+    db.run(
+        `UPDATE products SET name=?, price=?, emoji=?, category=?, weight=?, stock=? WHERE id=?`,
+        [name, price, emoji, category, weight, stock, req.params.id],
+        function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            res.json({ success: true, changes: this.changes });
+        }
+    );
+});
+
+// 📦 DELETE /api/products/:id - Удалить товар (Admin)
+app.delete('/api/products/:id', (req, res) => {
+    db.run(`DELETE FROM products WHERE id=?`, [req.params.id], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true, changes: this.changes });
+    });
+});
+
+// 🔐 POST /api/login - Авторизация
 app.post('/api/login', (req, res) => {
     const { email, password, role } = req.body;
-    
-    // Для демо: проверяем только email (в реальности нужно хешировать пароли!)
     db.get('SELECT * FROM users WHERE email = ?', [email], (err, user) => {
         if (err) return res.status(500).json({ error: err.message });
-        
-        if (user) {
-            // Пользователь найден
+        if (user && user.password === password) {
             res.json({ success: true, user: { email: user.email, role: user.role } });
         } else if (role === 'admin' && email === 'admin@freshmarket.ru' && password === 'admin') {
-            // Демо-админ для тестов
             res.json({ success: true, user: { email, role: 'admin' } });
         } else {
-            // Создаём нового пользователя (для демо)
-            db.run('INSERT INTO users (email, password, role) VALUES (?, ?, ?)', 
-                [email, password, role || 'customer'],
-                function(err) {
-                    if (err) return res.status(500).json({ error: err.message });
-                    res.json({ success: true, user: { email, role: role || 'customer' } });
-                }
-            );
+            res.status(401).json({ success: false, message: 'Неверный логин или пароль' });
         }
     });
 });
 
-// 🛒 Создать заказ
+// 🛒 POST /api/orders - Создать заказ
 app.post('/api/orders', (req, res) => {
     const { userId, items, total } = req.body;
-    
     db.serialize(() => {
-        db.run('INSERT INTO orders (user_id, total) VALUES (?, ?)', 
-            [userId, total],
-            function(err) {
-                if (err) return res.status(500).json({ error: err.message });
-                const orderId = this.lastID;
-                
-                // Добавляем позиции заказа
-                const stmt = db.prepare('INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)');
-                items.forEach(item => {
-                    stmt.run(orderId, item.id, item.quantity, item.price);
-                });
-                stmt.finalize();
-                
-                res.json({ success: true, orderId });
-            }
-        );
+        db.run('INSERT INTO orders (user_id, total) VALUES (?, ?)', [userId, total], function(err) {
+            if (err) return res.status(500).json({ error: err.message });
+            const orderId = this.lastID;
+            const stmt = db.prepare('INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)');
+            items.forEach(item => {
+                stmt.run(orderId, item.id, item.quantity, item.price);
+            });
+            stmt.finalize();
+            res.json({ success: true, orderId });
+        });
     });
 });
 
-// 👤 Получить заказы (для админки)
+// 🛒 GET /api/orders - Получить заказы (Admin)
 app.get('/api/orders', (req, res) => {
-    db.all(`SELECT o.*, u.email as customer 
-            FROM orders o 
-            LEFT JOIN users u ON o.user_id = u.id 
-            ORDER BY o.created_at DESC`, [], (err, rows) => {
+    db.all(`SELECT o.*, u.email as customer FROM orders o LEFT JOIN users u ON o.user_id = u.id ORDER BY o.created_at DESC`, [], (err, rows) => {
         if (err) return res.status(500).json({ error: err.message });
         res.json(rows);
     });
 });
 
-// ГЛАВНАЯ СТРАНИЦА (перенаправление на main.html)
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'main.html'));
+// 🛒 PUT /api/orders/:id/status - Обновить статус заказа (Admin)
+app.put('/api/orders/:id/status', (req, res) => {
+    const { status } = req.body;
+    db.run(`UPDATE orders SET status=? WHERE id=?`, [status, req.params.id], function(err) {
+        if (err) return res.status(500).json({ error: err.message });
+        res.json({ success: true });
+    });
 });
 
 // ===== ЗАПУСК СЕРВЕРА =====
 app.listen(PORT, () => {
-    console.log(`🚀 Сервер запущен: http://localhost:${PORT}`);
-    console.log(`📁 Статические файлы раздаются из: ${path.join(__dirname)}`);
+    console.log(`🚀 Сервер запущен: http://localhost:${PORT}/main.html`);
 });
 
-// Корректное закрытие БД при остановке
 process.on('SIGINT', () => {
     db.close(() => {
         console.log('🔌 База данных закрыта');
