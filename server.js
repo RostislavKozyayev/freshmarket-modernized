@@ -19,23 +19,21 @@ const db = new sqlite3.Database('./freshmarket.db', (err) => {
     else console.log('✅ Подключено к базе данных freshmarket.db');
 });
 
-// ✅ Включение внешних ключей (защита целостности данных)
+// Включение внешних ключей
 db.run('PRAGMA foreign_keys = ON');
 
-// Логирование ошибок (без вывода пользователю)
+// Логирование ошибок
 function logError(context, error) {
     const timestamp = new Date().toISOString();
     console.error(`[${timestamp}] ${context}:`, error?.message || error);
 }
 
-// ✅ Middleware проверки авторизации для админа
+// Middleware проверки авторизации
 function requireAdmin(req, res, next) {
     const authHeader = req.headers['authorization'];
-    
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({ success: false, message: 'Требуется авторизация' });
     }
-    
     const token = authHeader.substring(7);
     try {
         const userData = JSON.parse(Buffer.from(token, 'base64').toString('utf-8'));
@@ -49,7 +47,7 @@ function requireAdmin(req, res, next) {
     }
 }
 
-// ✅ Валидация данных товара
+// Валидация данных товара
 function validateProduct(data) {
     const errors = [];
     if (!data.name || typeof data.name !== 'string' || data.name.trim().length < 2) {
@@ -77,7 +75,7 @@ db.serialize(() => {
         role TEXT DEFAULT 'customer',
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP
     )`);
-
+    
     db.run(`CREATE TABLE IF NOT EXISTS products (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         name TEXT NOT NULL,
@@ -87,7 +85,7 @@ db.serialize(() => {
         weight TEXT,
         stock INTEGER DEFAULT 0
     )`);
-
+    
     db.run(`CREATE TABLE IF NOT EXISTS orders (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         user_id INTEGER,
@@ -96,7 +94,7 @@ db.serialize(() => {
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         FOREIGN KEY (user_id) REFERENCES users(id)
     )`);
-
+    
     db.run(`CREATE TABLE IF NOT EXISTS order_items (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         order_id INTEGER,
@@ -106,19 +104,11 @@ db.serialize(() => {
         FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
         FOREIGN KEY (product_id) REFERENCES products(id) ON DELETE CASCADE
     )`);
-
-    // Добавьте в db.serialize() после создания таблиц
-    db.run(`ALTER TABLE orders ADD COLUMN customer_email TEXT`, (err) => {
-        if (err && !err.message.includes('duplicate column')) {
-            console.error('Ошибка добавления поля customer_email:', err);
-        }
-    });
-
-    // ✅ Создаём админа с хешированным паролем
+    
+    // Создание админа
     bcrypt.hash('admin123', 10, (err, hash) => {
         if (!err) {
-            db.run(`INSERT OR IGNORE INTO users (email, password, role, name) 
-                    VALUES ('admin@freshmarket.ru', ?, 'admin', 'Администратор')`, [hash]);
+            db.run(`INSERT OR IGNORE INTO users (email, password, role, name) VALUES ('admin@freshmarket.ru', ?, 'admin', 'Администратор')`, [hash]);
         }
     });
 });
@@ -136,18 +126,14 @@ app.get('/api/products', (req, res) => {
     });
 });
 
-// 📦 POST /api/products (Admin + Validation)
+// 📦 POST /api/products (Admin)
 app.post('/api/products', requireAdmin, (req, res) => {
     const { name, price, emoji, category, weight, stock } = req.body;
-    
-    // ✅ Валидация входных данных
     const errors = validateProduct({ name, price, stock, category });
     if (errors.length > 0) {
         return res.status(400).json({ success: false, errors });
     }
-    
-    db.run(
-        `INSERT INTO products (name, price, emoji, category, weight, stock) VALUES (?, ?, ?, ?, ?, ?)`,
+    db.run(`INSERT INTO products (name, price, emoji, category, weight, stock) VALUES (?, ?, ?, ?, ?, ?)`,
         [name.trim(), price, emoji || '📦', category || 'other', weight || '1 шт', stock || 0],
         function(err) {
             if (err) {
@@ -159,17 +145,14 @@ app.post('/api/products', requireAdmin, (req, res) => {
     );
 });
 
-// 📦 PUT /api/products/:id (Admin + Validation)
+// 📦 PUT /api/products/:id (Admin)
 app.put('/api/products/:id', requireAdmin, (req, res) => {
     const { name, price, emoji, category, weight, stock } = req.body;
-    
     const errors = validateProduct({ name, price, stock, category });
     if (errors.length > 0) {
         return res.status(400).json({ success: false, errors });
     }
-    
-    db.run(
-        `UPDATE products SET name=?, price=?, emoji=?, category=?, weight=?, stock=? WHERE id=?`,
+    db.run(`UPDATE products SET name=?, price=?, emoji=?, category=?, weight=?, stock=? WHERE id=?`,
         [name.trim(), price, emoji, category, weight, stock, req.params.id],
         function(err) {
             if (err) {
@@ -192,11 +175,9 @@ app.delete('/api/products/:id', requireAdmin, (req, res) => {
     });
 });
 
-// 🔐 POST /api/login (Hashed Password)
+// 🔐 POST /api/login
 app.post('/api/login', (req, res) => {
     const { email, password, role } = req.body;
-    
-    // ✅ Проверка для админа
     if (role === 'admin') {
         db.get('SELECT * FROM users WHERE email = ? AND role = ?', [email, 'admin'], (err, user) => {
             if (err) {
@@ -216,8 +197,6 @@ app.post('/api/login', (req, res) => {
         });
         return;
     }
-    
-    // ✅ Проверка для покупателя
     db.get('SELECT * FROM users WHERE email = ? AND role = ?', [email, 'customer'], (err, user) => {
         if (err) {
             logError('Ошибка входа пользователя', err);
@@ -236,11 +215,9 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-// 🔐 POST /api/register (Hashed Password + Validation)
+// 🔐 POST /api/register
 app.post('/api/register', (req, res) => {
     const { name, email, password, role } = req.body;
-    
-    // ✅ Валидация
     if (!email || !password) {
         return res.status(400).json({ success: false, message: 'Email и пароль обязательны' });
     }
@@ -250,15 +227,12 @@ app.post('/api/register', (req, res) => {
     if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
         return res.status(400).json({ success: false, message: 'Некорректный email' });
     }
-    
     bcrypt.hash(password, 10, (err, hash) => {
         if (err) {
             logError('Ошибка хеширования пароля', err);
             return res.status(500).json({ success: false, message: 'Ошибка сервера' });
         }
-        
-        db.run(
-            'INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
+        db.run('INSERT INTO users (name, email, password, role) VALUES (?, ?, ?, ?)',
             [name || '', email, hash, role || 'customer'],
             function(err) {
                 if (err) {
@@ -276,53 +250,54 @@ app.post('/api/register', (req, res) => {
 
 // 🛒 POST /api/orders
 app.post('/api/orders', (req, res) => {
-    const { userId, userEmail, items, total } = req.body;
-    
+    const { userId, items, total } = req.body;
     if (!items || !Array.isArray(items) || items.length === 0) {
         return res.status(400).json({ success: false, message: 'Корзина пуста' });
     }
     if (typeof total !== 'number' || total <= 0) {
         return res.status(400).json({ success: false, message: 'Некорректная сумма заказа' });
     }
-    
     db.serialize(() => {
-        // ✅ Если userId = 0 или не передан — сохраняем email напрямую
-        if (!userId || userId === 0) {
-            db.run('INSERT INTO orders (user_id, total, customer_email) VALUES (?, ?, ?)', 
-                [null, total, userEmail || 'guest@example.com'], 
-                function(err) {
-                    if (err) {
-                        logError('Ошибка создания заказа', err);
-                        return res.status(500).json({ success: false, message: 'Ошибка при создании заказа' });
-                    }
-                    const orderId = this.lastID;
-                    const stmt = db.prepare('INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)');
-                    items.forEach(item => {
-                        stmt.run(orderId, item.id, item.quantity, item.price);
-                    });
-                    stmt.finalize();
-                    res.json({ success: true, orderId });
-                }
-            );
-        } else {
-            // ✅ Если userId передан — связываем с пользователем
-            db.run('INSERT INTO orders (user_id, total) VALUES (?, ?)', 
-                [userId, total], 
-                function(err) {
-                    if (err) {
-                        logError('Ошибка создания заказа', err);
-                        return res.status(500).json({ success: false, message: 'Ошибка при создании заказа' });
-                    }
-                    const orderId = this.lastID;
-                    const stmt = db.prepare('INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)');
-                    items.forEach(item => {
-                        stmt.run(orderId, item.id, item.quantity, item.price);
-                    });
-                    stmt.finalize();
-                    res.json({ success: true, orderId });
-                }
-            );
+        db.run('INSERT INTO orders (user_id, total) VALUES (?, ?)', [userId, total], function(err) {
+            if (err) {
+                logError('Ошибка создания заказа', err);
+                return res.status(500).json({ success: false, message: 'Ошибка при создании заказа' });
+            }
+            const orderId = this.lastID;
+            const stmt = db.prepare('INSERT INTO order_items (order_id, product_id, quantity, price) VALUES (?, ?, ?, ?)');
+            items.forEach(item => {
+                stmt.run(orderId, item.id, item.quantity, item.price);
+            });
+            stmt.finalize();
+            res.json({ success: true, orderId });
+        });
+    });
+});
+
+// 🛒 GET /api/orders (Admin) - ТОЛЬКО ОДИН РАЗ
+app.get('/api/orders', requireAdmin, (req, res) => {
+    db.all(`SELECT o.*, u.email as customer FROM orders o LEFT JOIN users u ON o.user_id = u.id ORDER BY o.created_at DESC`, [], (err, rows) => {
+        if (err) {
+            logError('Ошибка получения заказов', err);
+            return res.status(500).json({ error: 'Внутренняя ошибка сервера' });
         }
+        res.json(rows);
+    });
+});
+
+// 🛒 PUT /api/orders/:id/status (Admin)
+app.put('/api/orders/:id/status', requireAdmin, (req, res) => {
+    const { status } = req.body;
+    const validStatuses = ['new', 'processing', 'delivered', 'cancelled'];
+    if (!status || !validStatuses.includes(status)) {
+        return res.status(400).json({ success: false, message: 'Некорректный статус' });
+    }
+    db.run(`UPDATE orders SET status=? WHERE id=?`, [status, req.params.id], function(err) {
+        if (err) {
+            logError('Ошибка обновления статуса', err);
+            return res.status(500).json({ success: false, message: 'Ошибка при обновлении' });
+        }
+        res.json({ success: true });
     });
 });
 
@@ -332,7 +307,6 @@ app.get('/api/users/me', (req, res) => {
     if (!email) {
         return res.status(400).json({ error: 'Email обязателен' });
     }
-    
     db.get('SELECT id, email, name, role FROM users WHERE email = ?', [email], (err, user) => {
         if (err) {
             logError('Ошибка получения пользователя', err);
@@ -342,49 +316,6 @@ app.get('/api/users/me', (req, res) => {
             return res.status(404).json({ error: 'Пользователь не найден' });
         }
         res.json(user);
-    });
-});
-
-// 🛒 GET /api/orders (Admin)
-app.get('/api/orders', requireAdmin, (req, res) => {
-    db.all(`
-        SELECT o.id, o.user_id, o.total, o.status, o.created_at, o.customer_email,
-               u.email as customer 
-        FROM orders o 
-        LEFT JOIN users u ON o.user_id = u.id 
-        ORDER BY o.created_at DESC
-    `, [], (err, rows) => {
-        if (err) {
-            logError('Ошибка получения заказов', err);
-            return res.status(500).json({ error: 'Внутренняя ошибка сервера' });
-        }
-        
-        // ✅ Для заказов без user_id используем customer_email
-        rows.forEach(row => {
-            if (!row.customer && row.customer_email) {
-                row.customer = row.customer_email;
-            }
-        });
-        
-        res.json(rows);
-    });
-});
-
-// 🛒 PUT /api/orders/:id/status (Admin)
-app.put('/api/orders/:id/status', requireAdmin, (req, res) => {
-    const { status } = req.body;
-    const validStatuses = ['new', 'processing', 'delivered', 'cancelled'];
-    
-    if (!status || !validStatuses.includes(status)) {
-        return res.status(400).json({ success: false, message: 'Некорректный статус' });
-    }
-    
-    db.run(`UPDATE orders SET status=? WHERE id=?`, [status, req.params.id], function(err) {
-        if (err) {
-            logError('Ошибка обновления статуса', err);
-            return res.status(500).json({ success: false, message: 'Ошибка при обновлении' });
-        }
-        res.json({ success: true });
     });
 });
 

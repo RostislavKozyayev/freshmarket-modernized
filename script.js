@@ -8,17 +8,17 @@ let cart = [];
 /* ===== DOM ELEMENT CACHE ===== */
 const elements = {
     productsGrid: null,
-    cartCount:    null,
-    cartModal:    null,
-    cartBtn:      null,
-    closeBtn:     null,
-    cartItems:    null,
-    cartTotal:    null,
-    userInfo:     null,
-    logoutBtn:    null,
-    loginLink:    null,
-    adminLink:    null,
-    navLinks:     null,
+    cartCount: null,
+    cartModal: null,
+    cartBtn: null,
+    closeBtn: null,
+    cartItems: null,
+    cartTotal: null,
+    userInfo: null,
+    logoutBtn: null,
+    loginLink: null,
+    adminLink: null,
+    navLinks: null,
 };
 
 /* ===== INITIALIZATION ===== */
@@ -33,20 +33,16 @@ document.addEventListener('DOMContentLoaded', () => {
     setupPageNavigation();
     setupScrollSpy();
     handleAnchorScroll();
-
-    // ✅ Инициализация админ-панели (если мы на admin.html)
+    
     const currentPage = window.location.pathname.split('/').pop() || 'main.html';
     if (currentPage === 'admin.html') {
         if (checkAdminAccess()) {
-            setTimeout(() => {
-                updateStats();
-                loadAdminProducts();
-                loadAdminOrders();
-            }, 500);
+            updateStats();
+            loadAdminProducts();
         }
         return;
     }
-
+    
     if (elements.productsGrid) {
         loadProducts();
         filterProducts();
@@ -55,23 +51,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function cacheElements() {
     elements.productsGrid = document.getElementById('productsGrid');
-    elements.cartCount    = document.getElementById('cartCount');
-    elements.cartModal    = document.getElementById('cartModal');
-    elements.cartBtn      = document.getElementById('cartBtn');
-    elements.closeBtn     = document.querySelector('.close');
-    elements.cartItems    = document.getElementById('cartItems');
-    elements.cartTotal    = document.getElementById('cartTotal');
-    elements.userInfo     = document.getElementById('userInfo');
-    elements.logoutBtn    = document.getElementById('logoutBtn');
-    elements.loginLink    = document.getElementById('loginLink');
-    elements.adminLink    = document.getElementById('adminLink');
-    elements.navLinks     = document.querySelectorAll('.nav-link');
+    elements.cartCount = document.getElementById('cartCount');
+    elements.cartModal = document.getElementById('cartModal');
+    elements.cartBtn = document.getElementById('cartBtn');
+    elements.closeBtn = document.querySelector('.close');
+    elements.cartItems = document.getElementById('cartItems');
+    elements.cartTotal = document.getElementById('cartTotal');
+    elements.userInfo = document.getElementById('userInfo');
+    elements.logoutBtn = document.getElementById('logoutBtn');
+    elements.loginLink = document.getElementById('loginLink');
+    elements.adminLink = document.getElementById('adminLink');
+    elements.navLinks = document.querySelectorAll('.nav-link');
 }
 
 /* ===== HAMBURGER MENU ===== */
 function setupHamburger() {
     const hamburger = document.getElementById('hamburger');
-    const navMenu   = document.querySelector('.nav-menu');
+    const navMenu = document.querySelector('.nav-menu');
     if (!hamburger || !navMenu) return;
     
     hamburger.addEventListener('click', () => {
@@ -79,7 +75,7 @@ function setupHamburger() {
         hamburger.classList.toggle('open', isOpen);
         hamburger.setAttribute('aria-expanded', String(isOpen));
     });
-
+    
     navMenu.querySelectorAll('a').forEach(link => {
         link.addEventListener('click', () => {
             navMenu.classList.remove('open');
@@ -87,7 +83,7 @@ function setupHamburger() {
             hamburger.setAttribute('aria-expanded', 'false');
         });
     });
-
+    
     document.addEventListener('click', (e) => {
         if (!hamburger.contains(e.target) && !navMenu.contains(e.target)) {
             navMenu.classList.remove('open');
@@ -114,13 +110,13 @@ function setupPageNavigation() {
     const currentPage = window.location.pathname.split('/').pop() || 'main.html';
     const hash = window.location.hash;
     elements.navLinks.forEach(link => link.classList.remove('active'));
-
+    
     if (currentPage === 'main.html' || currentPage === 'index.html' || currentPage === '') {
-        if (hash === '#about')    setActiveLink('about');
+        if (hash === '#about') setActiveLink('about');
         else if (hash === '#contacts') setActiveLink('contacts');
         return;
     }
-
+    
     if (currentPage === 'catalog.html') {
         elements.navLinks.forEach(link => {
             if (link.getAttribute('data-page') === 'catalog') link.classList.add('active');
@@ -132,14 +128,10 @@ function setActiveLink(sectionId) {
     elements.navLinks.forEach(link => {
         link.classList.remove('active');
         const dataSection = link.getAttribute('data-section');
-        const dataPage    = link.getAttribute('data-page');
-        const href        = link.getAttribute('href') || '';
+        const dataPage = link.getAttribute('data-page');
+        const href = link.getAttribute('href') || '';
         
-        if (
-            dataSection === sectionId ||
-            href === '#' + sectionId ||
-            href.includes('#' + sectionId)
-        ) {
+        if (dataSection === sectionId || href === '#' + sectionId || href.includes('#' + sectionId)) {
             link.classList.add('active');
         }
         if (dataPage === 'home' && sectionId === 'home') {
@@ -153,45 +145,44 @@ function setupScrollSpy() {
     const currentPage = window.location.pathname.split('/').pop() || 'main.html';
     if (currentPage !== 'main.html' && currentPage !== 'index.html' && currentPage !== '') return;
     const sections = document.querySelectorAll('main, section, footer');
-
+    
     function updateActiveLink() {
-        const scrollPos     = window.scrollY + 100;
-        const windowHeight  = window.innerHeight;
-        const docHeight     = document.documentElement.scrollHeight;
+        const scrollPos = window.scrollY + 100;
+        const windowHeight = window.innerHeight;
+        const docHeight = document.documentElement.scrollHeight;
         let current = 'home';
-
+        
         sections.forEach(section => {
-            const id  = section.getAttribute('id');
+            const id = section.getAttribute('id');
             if (!id) return;
             const top = section.offsetTop;
-
-            if (id === 'about'     && scrollPos >= top - 100) current = 'about';
-            else if (id === 'contacts'  && scrollPos >= top)  current = 'contacts';
-            else if (scrollPos >= top  && scrollPos < top + section.offsetHeight) current = id;
+            
+            if (id === 'about' && scrollPos >= top - 100) current = 'about';
+            else if (id === 'contacts' && scrollPos >= top) current = 'contacts';
+            else if (scrollPos >= top && scrollPos < top + section.offsetHeight) current = id;
         });
-
+        
         if (scrollPos + windowHeight >= docHeight - 20) current = 'contacts';
-
+        
         elements.navLinks.forEach(link => {
             link.classList.remove('active');
-            const href        = link.getAttribute('href') || '';
+            const href = link.getAttribute('href') || '';
             const dataSection = link.getAttribute('data-section');
-            const dataPage    = link.getAttribute('data-page');
-
-            if (dataPage === 'home'  && current === 'home')       link.classList.add('active');
-            else if (dataSection === current)                      link.classList.add('active');
-            else if (href.includes('#' + current))                 link.classList.add('active');
+            const dataPage = link.getAttribute('data-page');
+            
+            if (dataPage === 'home' && current === 'home') link.classList.add('active');
+            else if (dataSection === current) link.classList.add('active');
+            else if (href.includes('#' + current)) link.classList.add('active');
         });
     }
-
+    
     window.addEventListener('scroll', updateActiveLink);
     setTimeout(updateActiveLink, 200);
-
+    
     document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-        anchor.addEventListener('click', function (e) {
+        anchor.addEventListener('click', function(e) {
             const href = this.getAttribute('href');
             if (!href || href === '#' || href.includes('index.html#')) return;
-
             const target = document.querySelector(href);
             if (target) {
                 e.preventDefault();
@@ -229,32 +220,32 @@ function displayProducts(productsToDisplay) {
 
 /* ===== FILTERS ===== */
 function setupFilters() {
-    const searchInput    = document.getElementById('searchInput');
+    const searchInput = document.getElementById('searchInput');
     const categoryFilter = document.getElementById('categoryFilter');
-    const priceFrom      = document.getElementById('priceFrom');
-    const priceTo        = document.getElementById('priceTo');
-    const resetBtn       = document.getElementById('resetFilters');
+    const priceFrom = document.getElementById('priceFrom');
+    const priceTo = document.getElementById('priceTo');
+    const resetBtn = document.getElementById('resetFilters');
     
-    if (searchInput)    searchInput.addEventListener('input',    debounce(filterProducts, 300));
+    if (searchInput) searchInput.addEventListener('input', debounce(filterProducts, 300));
     if (categoryFilter) categoryFilter.addEventListener('change', filterProducts);
-    if (priceFrom)      priceFrom.addEventListener('input',      debounce(filterProducts, 300));
-    if (priceTo)        priceTo.addEventListener('input',        debounce(filterProducts, 300));
-    if (resetBtn)       resetBtn.addEventListener('click',       resetFilters);
+    if (priceFrom) priceFrom.addEventListener('input', debounce(filterProducts, 300));
+    if (priceTo) priceTo.addEventListener('input', debounce(filterProducts, 300));
+    if (resetBtn) resetBtn.addEventListener('click', resetFilters);
 }
 
 function filterProducts() {
-    const searchTerm     = document.getElementById('searchInput')?.value.toLowerCase()    || '';
-    const activeCategory = document.getElementById('categoryFilter')?.value               || 'all';
-    const minPrice       = parseFloat(document.getElementById('priceFrom')?.value)        || 0;
-    const maxPrice       = parseFloat(document.getElementById('priceTo')?.value)          || Infinity;
+    const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
+    const activeCategory = document.getElementById('categoryFilter')?.value || 'all';
+    const minPrice = parseFloat(document.getElementById('priceFrom')?.value) || 0;
+    const maxPrice = parseFloat(document.getElementById('priceTo')?.value) || Infinity;
     
     const filtered = products.filter(product => {
-        const matchesSearch   = product.name.toLowerCase().includes(searchTerm);
+        const matchesSearch = product.name.toLowerCase().includes(searchTerm);
         const matchesCategory = activeCategory === 'all' || product.category === activeCategory;
-        const matchesPrice    = product.price >= minPrice && product.price <= maxPrice;
+        const matchesPrice = product.price >= minPrice && product.price <= maxPrice;
         return matchesSearch && matchesCategory && matchesPrice;
     });
-
+    
     displayProducts(filtered);
     updateResultsCount(filtered.length);
     toggleEmptyState(filtered.length === 0);
@@ -266,31 +257,31 @@ function updateResultsCount(count) {
 }
 
 function toggleEmptyState(isEmpty) {
-    const emptyState   = document.getElementById('emptyState');
+    const emptyState = document.getElementById('emptyState');
     const productsGrid = document.getElementById('productsGrid');
     if (!emptyState || !productsGrid) return;
-    emptyState.style.display   = isEmpty ? 'block' : 'none';
-    productsGrid.style.display = isEmpty ? 'none'  : 'grid';
+    emptyState.style.display = isEmpty ? 'block' : 'none';
+    productsGrid.style.display = isEmpty ? 'none' : 'grid';
 }
 
 window.resetFilters = () => {
-    const searchInput    = document.getElementById('searchInput');
+    const searchInput = document.getElementById('searchInput');
     const categoryFilter = document.getElementById('categoryFilter');
-    const priceFrom      = document.getElementById('priceFrom');
-    const priceTo        = document.getElementById('priceTo');
+    const priceFrom = document.getElementById('priceFrom');
+    const priceTo = document.getElementById('priceTo');
     
-    if (searchInput)    searchInput.value    = '';
+    if (searchInput) searchInput.value = '';
     if (categoryFilter) categoryFilter.value = 'all';
-    if (priceFrom)      priceFrom.value      = '';
-    if (priceTo)        priceTo.value        = '';
-
+    if (priceFrom) priceFrom.value = '';
+    if (priceTo) priceTo.value = '';
+    
     filterProducts();
     showNotification('Фильтры сброшены');
 };
 
 function debounce(func, wait) {
     let timeout;
-    return function (...args) {
+    return function(...args) {
         clearTimeout(timeout);
         timeout = setTimeout(() => func(...args), wait);
     };
@@ -306,7 +297,6 @@ window.addToCart = (id) => {
     } else {
         cart.push({ ...product, quantity: 1 });
     }
-
     updateCartUI();
     saveCartToStorage();
     showNotification(`${product.name} добавлен в корзину`);
@@ -343,7 +333,7 @@ function renderCartItems() {
         if (elements.cartTotal) elements.cartTotal.textContent = '0 ₽';
         return;
     }
-
+    
     elements.cartItems.innerHTML = cart.map(item => `
         <div class="cart-item">
             <div class="cart-item-info">
@@ -364,7 +354,7 @@ function renderCartItems() {
             </div>
         </div>
     `).join('');
-
+    
     const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
     if (elements.cartTotal) elements.cartTotal.textContent = `${total} ₽`;
 }
@@ -376,24 +366,19 @@ window.checkout = async () => {
         return;
     }
     const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    
-    // ✅ Получаем email текущего пользователя
     const userEmail = localStorage.getItem('userEmail') || 'guest@example.com';
+    const isLoggedIn = localStorage.getItem('isLoggedIn');
     
-    // ✅ Получаем userId из БД (или используем 0 для гостей)
-    let userId = 0; // 0 для гостей
-    
-    // Если пользователь авторизован — пытаемся получить его ID
-    if (localStorage.getItem('isLoggedIn') === 'true') {
+    let userId = null;
+    if (isLoggedIn === 'true') {
         try {
-            // Запрашиваем пользователя по email
             const userResponse = await fetch(`${API_URL}/users/me?email=${encodeURIComponent(userEmail)}`);
             if (userResponse.ok) {
                 const userData = await userResponse.json();
-                userId = userData.id || 0;
+                userId = userData.id;
             }
         } catch (error) {
-            console.warn('Не удалось получить ID пользователя, используем 0');
+            console.warn('Не удалось получить ID пользователя');
         }
     }
     
@@ -401,12 +386,7 @@ window.checkout = async () => {
         const response = await fetch(`${API_URL}/orders`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                userId: userId,
-                userEmail: userEmail,  // ✅ Передаём email явно
-                items: cart,
-                total: total
-            })
+            body: JSON.stringify({ userId: userId, items: cart, total: total })
         });
         const result = await response.json();
         if (result.success) {
@@ -427,22 +407,21 @@ window.checkout = async () => {
 function openModal() {
     if (!elements.cartModal) return;
     elements.cartModal.style.display = 'block';
-    document.body.style.overflow     = 'hidden';
+    document.body.style.overflow = 'hidden';
 }
 
 function closeModal() {
     if (!elements.cartModal) return;
     elements.cartModal.style.display = 'none';
-    document.body.style.overflow     = '';
+    document.body.style.overflow = '';
 }
 
 /* ===== AUTH (API) ===== */
-/* ===== AUTH (API) ===== */
 async function handleLogin(e) {
     e.preventDefault();
-    const email    = document.getElementById('email').value.trim();
+    const email = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
-    const role     = document.querySelector('.role-btn.active')?.dataset.role || 'customer';
+    const role = document.querySelector('.role-btn.active')?.dataset.role || 'customer';
     const errorDiv = document.getElementById('errorMessage');
     
     if (!email || !password) {
@@ -450,7 +429,7 @@ async function handleLogin(e) {
         return;
     }
     if (errorDiv) errorDiv.classList.remove('show');
-
+    
     try {
         const response = await fetch('http://localhost:3000/api/login', {
             method: 'POST',
@@ -458,14 +437,12 @@ async function handleLogin(e) {
             body: JSON.stringify({ email, password, role })
         });
         const result = await response.json();
-
+        
         if (result.success) {
             localStorage.setItem('isLoggedIn', 'true');
-            localStorage.setItem('userRole',   result.user.role);
-            localStorage.setItem('userEmail',  result.user.email);
-            // ✅ ДОБАВИТЬ ЭТУ СТРОКУ:
-            localStorage.setItem('authToken',  result.token || '');
-            
+            localStorage.setItem('userRole', result.user.role);
+            localStorage.setItem('userEmail', result.user.email);
+            localStorage.setItem('authToken', result.token || '');
             window.location.href = result.user.role === 'admin' ? 'admin.html' : 'main.html';
         } else {
             const msg = result.message || 'Неверный логин или пароль';
@@ -479,7 +456,6 @@ async function handleLogin(e) {
     }
 }
 
-// ✅ Функция для получения заголовков с токеном
 function getAuthHeaders() {
     const token = localStorage.getItem('authToken');
     return {
@@ -489,18 +465,18 @@ function getAuthHeaders() {
 }
 
 window.togglePassword = () => {
-    const input  = document.getElementById('password');
+    const input = document.getElementById('password');
     const toggle = document.querySelector('.toggle-password');
     const isText = input.type === 'text';
-    input.type          = isText ? 'password' : 'text';
+    input.type = isText ? 'password' : 'text';
     if (toggle) toggle.textContent = isText ? 'Показать' : 'Скрыть';
 };
 
 window.toggleRegPassword = (inputId, btn) => {
     const input = document.getElementById(inputId);
     if (!input) return;
-    const isText    = input.type === 'text';
-    input.type      = isText ? 'password' : 'text';
+    const isText = input.type === 'text';
+    input.type = isText ? 'password' : 'text';
     btn.textContent = isText ? 'Показать' : 'Скрыть';
 };
 
@@ -508,20 +484,18 @@ window.toggleRegPassword = (inputId, btn) => {
 (function setupRegisterForm() {
     const form = document.getElementById('registerForm');
     if (!form) return;
-    
-    form.addEventListener('submit', async function (e) {
+    form.addEventListener('submit', async function(e) {
         e.preventDefault();
-
-        const name      = document.getElementById('regName').value.trim();
-        const email     = document.getElementById('regEmail').value.trim();
-        const password  = document.getElementById('regPassword').value;
-        const confirm   = document.getElementById('regPasswordConfirm').value;
-        const errorDiv   = document.getElementById('errorMessage');
+        const name = document.getElementById('regName').value.trim();
+        const email = document.getElementById('regEmail').value.trim();
+        const password = document.getElementById('regPassword').value;
+        const confirm = document.getElementById('regPasswordConfirm').value;
+        const errorDiv = document.getElementById('errorMessage');
         const successDiv = document.getElementById('successMessage');
-
+        
         errorDiv.classList.remove('show');
         successDiv.classList.remove('show');
-
+        
         if (!name || !email || !password || !confirm) {
             errorDiv.textContent = '⚠️ Заполните все поля';
             errorDiv.classList.add('show');
@@ -537,7 +511,7 @@ window.toggleRegPassword = (inputId, btn) => {
             errorDiv.classList.add('show');
             return;
         }
-
+        
         try {
             const response = await fetch('http://localhost:3000/api/register', {
                 method: 'POST',
@@ -548,12 +522,10 @@ window.toggleRegPassword = (inputId, btn) => {
             
             if (result.success) {
                 localStorage.setItem('isLoggedIn', 'true');
-                localStorage.setItem('userRole',   'customer');
-                localStorage.setItem('userEmail',  email);
-
+                localStorage.setItem('userRole', 'customer');
+                localStorage.setItem('userEmail', email);
                 successDiv.textContent = '✅ Регистрация прошла успешно! Перенаправляем...';
                 successDiv.classList.add('show');
-
                 setTimeout(() => { window.location.href = 'main.html'; }, 1500);
             } else {
                 errorDiv.textContent = '⚠️ ' + (result.message || 'Ошибка регистрации');
@@ -568,25 +540,24 @@ window.toggleRegPassword = (inputId, btn) => {
 
 function checkAuth() {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
-    const email      = localStorage.getItem('userEmail');
-    const userRole   = localStorage.getItem('userRole');
+    const email = localStorage.getItem('userEmail');
+    const userRole = localStorage.getItem('userRole');
     
     if (elements.userInfo && elements.logoutBtn && elements.loginLink) {
         if (isLoggedIn === 'true') {
-            elements.userInfo.textContent  = email || '';
-            elements.userInfo.style.display   = 'inline';
-            elements.logoutBtn.style.display  = 'inline-block';
-            elements.loginLink.style.display  = 'none';
+            elements.userInfo.textContent = email || '';
+            elements.userInfo.style.display = 'inline';
+            elements.logoutBtn.style.display = 'inline-block';
+            elements.loginLink.style.display = 'none';
         } else {
-            elements.userInfo.style.display   = 'none';
-            elements.logoutBtn.style.display  = 'none';
-            elements.loginLink.style.display  = 'inline-block';
+            elements.userInfo.style.display = 'none';
+            elements.logoutBtn.style.display = 'none';
+            elements.loginLink.style.display = 'inline-block';
         }
     }
-
+    
     if (elements.adminLink) {
-        elements.adminLink.style.display =
-            (isLoggedIn === 'true' && userRole === 'admin') ? 'inline-block' : 'none';
+        elements.adminLink.style.display = (isLoggedIn === 'true' && userRole === 'admin') ? 'inline-block' : 'none';
     }
 }
 
@@ -594,12 +565,14 @@ window.logout = () => {
     localStorage.removeItem('userRole');
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userEmail');
-    window.location.href = 'main.html';
+    localStorage.removeItem('authToken');
+    showNotification('Выход выполнен');
+    setTimeout(() => { window.location.href = 'main.html'; }, 1000);
 };
 
 window.goToAdmin = () => {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
-    const userRole   = localStorage.getItem('userRole');
+    const userRole = localStorage.getItem('userRole');
     if (isLoggedIn !== 'true') {
         showNotification('Сначала войдите в систему!', 'error');
         setTimeout(() => { window.location.href = 'login.html'; }, 1500);
@@ -618,15 +591,15 @@ window.showMore = () => {
 
 /* ===== EVENT LISTENERS ===== */
 function setupEventListeners() {
-    if (elements.cartBtn)  elements.cartBtn.addEventListener('click', openModal);
+    if (elements.cartBtn) elements.cartBtn.addEventListener('click', openModal);
     if (elements.closeBtn) elements.closeBtn.addEventListener('click', closeModal);
     window.addEventListener('click', (e) => {
         if (e.target === elements.cartModal) closeModal();
     });
-
+    
     const loginForm = document.getElementById('loginForm');
     if (loginForm) loginForm.addEventListener('submit', handleLogin);
-
+    
     const contactForm = document.querySelector('.contact-form');
     if (contactForm) {
         contactForm.addEventListener('submit', (e) => {
@@ -635,7 +608,7 @@ function setupEventListeners() {
             contactForm.reset();
         });
     }
-
+    
     document.querySelectorAll('.role-btn').forEach(btn => {
         btn.addEventListener('click', () => {
             document.querySelectorAll('.role-btn').forEach(b => b.classList.remove('active'));
@@ -647,26 +620,25 @@ function setupEventListeners() {
 /* ===== HERO ANIMATION ===== */
 function setupHeroAnimation() {
     const heroVisual = document.querySelector('.hero-visual');
-    const items      = document.querySelectorAll('.item');
+    const items = document.querySelectorAll('.item');
     if (!heroVisual || window.innerWidth <= 992) return;
     let trackingEnabled = false;
     setTimeout(() => { trackingEnabled = true; }, 2000);
-
+    
     heroVisual.addEventListener('mousemove', (e) => {
         if (!trackingEnabled) return;
         const rect = heroVisual.getBoundingClientRect();
-        const xPct = (e.clientX - rect.left) / rect.width  - 0.5;
-        const yPct = (e.clientY - rect.top)  / rect.height - 0.5;
-
+        const xPct = (e.clientX - rect.left) / rect.width - 0.5;
+        const yPct = (e.clientY - rect.top) / rect.height - 0.5;
+        
         items.forEach((item, i) => {
             const intensity = (i + 1) * 15;
-            item.style.transform =
-                `translate(${xPct * intensity}px, ${yPct * intensity}px)` +
+            item.style.transform = `translate(${xPct * intensity}px, ${yPct * intensity}px)` +
                 ` rotateX(${yPct * -intensity * 1.5}deg)` +
                 ` rotateY(${xPct * intensity * 1.5}deg)`;
         });
     });
-
+    
     heroVisual.addEventListener('mouseleave', () => {
         items.forEach(item => { item.style.transform = ''; });
     });
@@ -676,7 +648,6 @@ function setupHeroAnimation() {
 function checkAdminAccess() {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     const userRole = localStorage.getItem('userRole');
-    
     if (isLoggedIn !== 'true' || userRole !== 'admin') {
         showNotification('Доступ запрещён! Только для администраторов', 'error');
         setTimeout(() => { window.location.href = 'main.html'; }, 1500);
@@ -688,31 +659,24 @@ function checkAdminAccess() {
 function showAdminSection(section) {
     const productsSection = document.getElementById('productsSection');
     const ordersSection = document.getElementById('ordersSection');
-    
     if (!productsSection || !ordersSection) {
         console.error('Секции не найдены!');
         return;
     }
-    
     productsSection.style.display = section === 'products' ? 'block' : 'none';
     ordersSection.style.display = section === 'orders' ? 'block' : 'none';
     
-    // Обновляем кнопки навигации
     document.querySelectorAll('.admin-nav-item').forEach(btn => {
         btn.classList.remove('active');
         if (btn.dataset.section === section) btn.classList.add('active');
     });
-    
     document.querySelectorAll('.admin-tab-btn').forEach(btn => {
         btn.classList.remove('active');
         if (btn.dataset.section === section) btn.classList.add('active');
     });
     
-    if (section === 'products') {
-        loadAdminProducts();
-    } else if (section === 'orders') {
-        loadAdminOrders();
-    }
+    if (section === 'products') loadAdminProducts();
+    else if (section === 'orders') loadAdminOrders();
 }
 
 async function loadAdminProducts() {
@@ -725,7 +689,7 @@ async function loadAdminProducts() {
         console.error('Ошибка загрузки товаров:', error);
         const tbody = document.getElementById('productsTableBody');
         if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text-muted)">Не удалось загрузить товары. Проверьте, запущен ли сервер.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text-muted)">Не удалось загрузить товары</td></tr>';
         }
     }
 }
@@ -733,52 +697,33 @@ async function loadAdminProducts() {
 function renderAdminProducts(products) {
     const tbody = document.getElementById('productsTableBody');
     if (!tbody) return;
-    
     if (products.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text-muted)">Товары отсутствуют</td></tr>';
         updateStats();
         return;
     }
-    
     tbody.innerHTML = products.map(p => `
         <tr>
-            <td>
-                <div class="product-cell">
-                    <div class="product-emoji">${p.emoji || '📦'}</div>
-                    <span class="product-name">${p.name}</span>
-                </div>
-            </td>
+            <td><div class="product-cell"><div class="product-emoji">${p.emoji || '📦'}</div><span class="product-name">${p.name}</span></div></td>
             <td>${p.price} ₽</td>
             <td><span class="stock-status stock-in">В наличии</span></td>
-            <td>
-                <div class="action-buttons">
-                    <button class="action-btn edit" onclick="editProduct(${p.id})">Редактировать</button>
-                    <button class="action-btn delete" onclick="deleteProduct(${p.id})">Удалить</button>
-                </div>
-            </td>
+            <td><div class="action-buttons"><button class="action-btn edit" onclick="editProduct(${p.id})">Редактировать</button><button class="action-btn delete" onclick="deleteProduct(${p.id})">Удалить</button></div></td>
         </tr>
     `).join('');
-    
     updateStats();
 }
 
 async function loadAdminOrders() {
     try {
-        const response = await fetch('http://localhost:3000/api/orders', {
-            headers: getAuthHeaders()  // ✅ ОТПРАВЛЯЕМ ТОКЕН
-        });
-        
-        if (!response.ok) {
-            throw new Error('Server error: ' + response.status);
-        }
-        
+        const response = await fetch('http://localhost:3000/api/orders', { headers: getAuthHeaders() });
+        if (!response.ok) throw new Error('Server error: ' + response.status);
         const orders = await response.json();
         renderAdminOrders(orders);
     } catch (error) {
         console.error('Ошибка загрузки заказов:', error);
         const tbody = document.getElementById('ordersTableBody');
         if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Не удалось загрузить заказы. Проверьте авторизацию.</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Не удалось загрузить заказы</td></tr>';
         }
     }
 }
@@ -786,37 +731,21 @@ async function loadAdminOrders() {
 function renderAdminOrders(orders) {
     const tbody = document.getElementById('ordersTableBody');
     if (!tbody) return;
-    
     if (orders.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Заказы отсутствуют</td></tr>';
         updateStats();
         return;
     }
-    
-    tbody.innerHTML = orders.map(o => {
-        // ✅ Исправление часового пояса (добавляем 3 часа для Москвы)
-        let orderDate = new Date(o.created_at);
-        // Если время в UTC, добавляем 3 часа для московского времени
-        orderDate.setHours(orderDate.getHours() + 3);
-        
-        return `
+    tbody.innerHTML = orders.map(o => `
         <tr>
             <td>#${o.id}</td>
-            <td>${o.customer_email || o.customer || 'Гость'}</td>
+            <td>${o.customer || 'Гость'}</td>
             <td>${o.total} ₽</td>
-            <td>
-                <select class="order-status" onchange="updateOrderStatus(${o.id}, this.value)">
-                    <option value="new" ${o.status === 'new' ? 'selected' : ''}>Новый</option>
-                    <option value="processing" ${o.status === 'processing' ? 'selected' : ''}>В обработке</option>
-                    <option value="delivered" ${o.status === 'delivered' ? 'selected' : ''}>Доставлен</option>
-                    <option value="cancelled" ${o.status === 'cancelled' ? 'selected' : ''}>Отменён</option>
-                </select>
-            </td>
-            <td>${orderDate.toLocaleDateString('ru-RU')} ${orderDate.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'})}</td>
+            <td><select class="order-status" onchange="updateOrderStatus(${o.id}, this.value)"><option value="new" ${o.status === 'new' ? 'selected' : ''}>Новый</option><option value="processing" ${o.status === 'processing' ? 'selected' : ''}>В обработке</option><option value="delivered" ${o.status === 'delivered' ? 'selected' : ''}>Доставлен</option><option value="cancelled" ${o.status === 'cancelled' ? 'selected' : ''}>Отменён</option></select></td>
+            <td>${new Date(o.created_at).toLocaleDateString('ru-RU')}</td>
             <td><button class="action-btn edit" onclick="viewOrder(${o.id})">Просмотр</button></td>
         </tr>
-    `}).join('');
-    
+    `).join('');
     updateStats();
 }
 
@@ -826,26 +755,19 @@ function updateStats() {
     const revenue = document.getElementById('revenue');
     
     if (totalProducts) {
-        fetch('http://localhost:3000/api/products')
-            .then(res => res.json())
-            .then(products => {
-                totalProducts.textContent = products.length;
-            });
+        fetch('http://localhost:3000/api/products').then(res => res.json()).then(products => {
+            totalProducts.textContent = products.length;
+        });
     }
     
     if (todayOrders || revenue) {
-        fetch('http://localhost:3000/api/orders', {
-            headers: getAuthHeaders()  // ✅ ОТПРАВЛЯЕМ ТОКЕН
-        })
-            .then(res => res.json())
-            .then(orders => {
-                const today = new Date().toDateString();
-                const todayOrdersCount = orders.filter(o => new Date(o.created_at).toDateString() === today).length;
-                const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
-                
-                if (todayOrders) todayOrders.textContent = todayOrdersCount;
-                if (revenue) revenue.textContent = `${totalRevenue} ₽`;
-            });
+        fetch('http://localhost:3000/api/orders', { headers: getAuthHeaders() }).then(res => res.json()).then(orders => {
+            const today = new Date().toDateString();
+            const todayOrdersCount = orders.filter(o => new Date(o.created_at).toDateString() === today).length;
+            const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
+            if (todayOrders) todayOrders.textContent = todayOrdersCount;
+            if (revenue) revenue.textContent = `${totalRevenue} ₽`;
+        });
     }
 }
 
@@ -858,15 +780,14 @@ window.openAddProductModal = async () => {
     const category = prompt('Категория (fruits, dairy, bakery, drinks, other):', 'other');
     const weight = prompt('Вес:', '1 шт');
     const stock = parseInt(prompt('Количество на складе:', '10'));
-
+    
     try {
         const response = await fetch('http://localhost:3000/api/products', {
             method: 'POST',
-            headers: getAuthHeaders(),  // ✅ ОТПРАВЛЯЕМ ТОКЕН
+            headers: getAuthHeaders(),
             body: JSON.stringify({ name, price, emoji, category, weight, stock })
         });
         const result = await response.json();
-        
         if (result.success) {
             showNotification('Товар добавлен');
             loadAdminProducts();
@@ -883,31 +804,20 @@ window.editProduct = async (id) => {
         const response = await fetch('http://localhost:3000/api/products');
         const products = await response.json();
         const product = products.find(p => p.id === id);
-        
         if (!product) { showNotification('Товар не найден', 'error'); return; }
         
         const newName = prompt('Новое название:', product.name);
         if (!newName) return;
-        
         const newPrice = parseFloat(prompt('Новая цена:', product.price));
         if (isNaN(newPrice)) { showNotification('Некорректная цена', 'error'); return; }
-        
         const newStock = parseInt(prompt('Новое количество на складе:', product.stock || '0'));
         
         const responseUpdate = await fetch(`http://localhost:3000/api/products/${id}`, {
             method: 'PUT',
-            headers: getAuthHeaders(),  // ✅ ОТПРАВЛЯЕМ ТОКЕН
-            body: JSON.stringify({ 
-                name: newName, 
-                price: newPrice, 
-                emoji: product.emoji, 
-                category: product.category, 
-                weight: product.weight, 
-                stock: newStock 
-            })
+            headers: getAuthHeaders(),
+            body: JSON.stringify({ name: newName, price: newPrice, emoji: product.emoji, category: product.category, weight: product.weight, stock: newStock })
         });
         const result = await responseUpdate.json();
-        
         if (result.success) {
             showNotification('Товар обновлён');
             loadAdminProducts();
@@ -922,12 +832,8 @@ window.editProduct = async (id) => {
 window.deleteProduct = async (id) => {
     if (!confirm('Удалить товар? Это действие нельзя отменить.')) return;
     try {
-        const response = await fetch(`http://localhost:3000/api/products/${id}`, { 
-            method: 'DELETE',
-            headers: getAuthHeaders()  // ✅ ОТПРАВЛЯЕМ ТОКЕН
-        });
+        const response = await fetch(`http://localhost:3000/api/products/${id}`, { method: 'DELETE', headers: getAuthHeaders() });
         const result = await response.json();
-        
         if (result.success) {
             showNotification('Товар удалён');
             loadAdminProducts();
@@ -943,11 +849,10 @@ window.updateOrderStatus = async (orderId, status) => {
     try {
         const response = await fetch(`http://localhost:3000/api/orders/${orderId}/status`, {
             method: 'PUT',
-            headers: getAuthHeaders(),  // ✅ ОТПРАВЛЯЕМ ТОКЕН
+            headers: getAuthHeaders(),
             body: JSON.stringify({ status })
         });
         const result = await response.json();
-        
         if (result.success) {
             showNotification('Статус заказа обновлён');
         } else {
@@ -960,28 +865,30 @@ window.updateOrderStatus = async (orderId, status) => {
 
 window.viewOrder = async (orderId) => {
     try {
-        const response = await fetch('http://localhost:3000/api/orders', {
-            headers: getAuthHeaders()  // ✅ ОТПРАВЛЯЕМ ТОКЕН
-        });
+        const response = await fetch('http://localhost:3000/api/orders', { headers: getAuthHeaders() });
         const orders = await response.json();
         const order = orders.find(o => o.id === orderId);
-        
         if (!order) { showNotification('Заказ не найден', 'error'); return; }
-        
         alert(`Заказ #${order.id}\n\nКлиент: ${order.customer || 'Гость'}\nСумма: ${order.total} ₽\nСтатус: ${order.status}\nДата: ${new Date(order.created_at).toLocaleString('ru-RU')}`);
     } catch (error) {
         showNotification('Ошибка загрузки заказа', 'error');
     }
 };
 
-window.logout = () => {
-    localStorage.removeItem('userRole');
-    localStorage.removeItem('isLoggedIn');
-    localStorage.removeItem('userEmail');
-    localStorage.removeItem('authToken');
-    showNotification('Выход выполнен');
-    setTimeout(() => { window.location.href = 'main.html'; }, 1000);
-};
+// ✅ ЭКСПОРТ ФУНКЦИЙ В ГЛОБАЛЬНУЮ ОБЛАСТЬ ВИДИМОСТИ
+window.showAdminSection = showAdminSection;
+window.checkAdminAccess = checkAdminAccess;
+window.loadAdminProducts = loadAdminProducts;
+window.loadAdminOrders = loadAdminOrders;
+window.renderAdminProducts = renderAdminProducts;
+window.renderAdminOrders = renderAdminOrders;
+window.updateStats = updateStats;
+window.editProduct = editProduct;
+window.deleteProduct = deleteProduct;
+window.openAddProductModal = openAddProductModal;
+window.updateOrderStatus = updateOrderStatus;
+window.viewOrder = viewOrder;
+window.logout = logout;
 
 /* ===== LOCAL STORAGE ===== */
 function saveCartToStorage() {
@@ -999,20 +906,18 @@ function loadCartFromStorage() {
 /* ===== NOTIFICATIONS ===== */
 function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
-    notification.className   = 'toast-notification' + (type === 'error' ? ' toast-error' : '');
+    notification.className = 'toast-notification' + (type === 'error' ? ' toast-error' : '');
     notification.textContent = (type === 'error' ? '❌ ' : '✅ ') + message;
     document.body.appendChild(notification);
-
     notification.getBoundingClientRect();
     notification.classList.add('toast-visible');
-
     setTimeout(() => {
         notification.classList.remove('toast-visible');
         notification.addEventListener('transitionend', () => notification.remove());
     }, 3500);
 }
 
-/* ===== ANIMATION STYLES (injected once) ===== */
+/* ===== ANIMATION STYLES ===== */
 const animStyle = document.createElement('style');
 animStyle.textContent = `.toast-notification { position: fixed; top: 100px; right: 20px; background: var(--primary); color: #fff; padding: 14px 22px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.18); z-index: 10000; font-weight: 600; font-size: 15px; transform: translateX(440px); transition: transform .35s cubic-bezier(.175,.885,.32,1.275), opacity .35s ease; opacity: 0; max-width: calc(100vw - 40px); } .toast-notification.toast-error { background: #e53e3e; } .toast-visible { transform: translateX(0); opacity: 1; }`;
 document.head.appendChild(animStyle);
