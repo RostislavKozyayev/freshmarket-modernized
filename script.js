@@ -376,14 +376,34 @@ window.checkout = async () => {
         return;
     }
     const total = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
-    const email = localStorage.getItem('userEmail') || 'guest@example.com';
+    
+    // ✅ Получаем email текущего пользователя
+    const userEmail = localStorage.getItem('userEmail') || 'guest@example.com';
+    
+    // ✅ Получаем userId из БД (или используем 0 для гостей)
+    let userId = 0; // 0 для гостей
+    
+    // Если пользователь авторизован — пытаемся получить его ID
+    if (localStorage.getItem('isLoggedIn') === 'true') {
+        try {
+            // Запрашиваем пользователя по email
+            const userResponse = await fetch(`${API_URL}/users/me?email=${encodeURIComponent(userEmail)}`);
+            if (userResponse.ok) {
+                const userData = await userResponse.json();
+                userId = userData.id || 0;
+            }
+        } catch (error) {
+            console.warn('Не удалось получить ID пользователя, используем 0');
+        }
+    }
     
     try {
         const response = await fetch(`${API_URL}/orders`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
-                userId: 1,
+                userId: userId,
+                userEmail: userEmail,  // ✅ Передаём email явно
                 items: cart,
                 total: total
             })
@@ -417,13 +437,14 @@ function closeModal() {
 }
 
 /* ===== AUTH (API) ===== */
+/* ===== AUTH (API) ===== */
 async function handleLogin(e) {
     e.preventDefault();
     const email    = document.getElementById('email').value.trim();
     const password = document.getElementById('password').value;
     const role     = document.querySelector('.role-btn.active')?.dataset.role || 'customer';
     const errorDiv = document.getElementById('errorMessage');
-
+    
     if (!email || !password) {
         if (errorDiv) { errorDiv.textContent = '⚠️ Введите email и пароль'; errorDiv.classList.add('show'); }
         return;
@@ -442,6 +463,9 @@ async function handleLogin(e) {
             localStorage.setItem('isLoggedIn', 'true');
             localStorage.setItem('userRole',   result.user.role);
             localStorage.setItem('userEmail',  result.user.email);
+            // ✅ ДОБАВИТЬ ЭТУ СТРОКУ:
+            localStorage.setItem('authToken',  result.token || '');
+            
             window.location.href = result.user.role === 'admin' ? 'admin.html' : 'main.html';
         } else {
             const msg = result.message || 'Неверный логин или пароль';
@@ -453,6 +477,15 @@ async function handleLogin(e) {
         if (errorDiv) { errorDiv.textContent = '⚠️ ' + msg; errorDiv.classList.add('show'); }
         else showNotification(msg, 'error');
     }
+}
+
+// ✅ Функция для получения заголовков с токеном
+function getAuthHeaders() {
+    const token = localStorage.getItem('authToken');
+    return {
+        'Content-Type': 'application/json',
+        'Authorization': token ? `Bearer ${token}` : ''
+    };
 }
 
 window.togglePassword = () => {
@@ -652,6 +685,36 @@ function checkAdminAccess() {
     return true;
 }
 
+function showAdminSection(section) {
+    const productsSection = document.getElementById('productsSection');
+    const ordersSection = document.getElementById('ordersSection');
+    
+    if (!productsSection || !ordersSection) {
+        console.error('Секции не найдены!');
+        return;
+    }
+    
+    productsSection.style.display = section === 'products' ? 'block' : 'none';
+    ordersSection.style.display = section === 'orders' ? 'block' : 'none';
+    
+    // Обновляем кнопки навигации
+    document.querySelectorAll('.admin-nav-item').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.section === section) btn.classList.add('active');
+    });
+    
+    document.querySelectorAll('.admin-tab-btn').forEach(btn => {
+        btn.classList.remove('active');
+        if (btn.dataset.section === section) btn.classList.add('active');
+    });
+    
+    if (section === 'products') {
+        loadAdminProducts();
+    } else if (section === 'orders') {
+        loadAdminOrders();
+    }
+}
+
 async function loadAdminProducts() {
     try {
         const response = await fetch('http://localhost:3000/api/products');
@@ -701,14 +764,21 @@ function renderAdminProducts(products) {
 
 async function loadAdminOrders() {
     try {
-        const response = await fetch('http://localhost:3000/api/orders');
+        const response = await fetch('http://localhost:3000/api/orders', {
+            headers: getAuthHeaders()  // ✅ ОТПРАВЛЯЕМ ТОКЕН
+        });
+        
+        if (!response.ok) {
+            throw new Error('Server error: ' + response.status);
+        }
+        
         const orders = await response.json();
         renderAdminOrders(orders);
     } catch (error) {
         console.error('Ошибка загрузки заказов:', error);
         const tbody = document.getElementById('ordersTableBody');
         if (tbody) {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Не удалось загрузить заказы</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text-muted)">Не удалось загрузить заказы. Проверьте авторизацию.</td></tr>';
         }
     }
 }
@@ -723,10 +793,16 @@ function renderAdminOrders(orders) {
         return;
     }
     
-    tbody.innerHTML = orders.map(o => `
+    tbody.innerHTML = orders.map(o => {
+        // ✅ Исправление часового пояса (добавляем 3 часа для Москвы)
+        let orderDate = new Date(o.created_at);
+        // Если время в UTC, добавляем 3 часа для московского времени
+        orderDate.setHours(orderDate.getHours() + 3);
+        
+        return `
         <tr>
             <td>#${o.id}</td>
-            <td>${o.customer || 'Гость'}</td>
+            <td>${o.customer_email || o.customer || 'Гость'}</td>
             <td>${o.total} ₽</td>
             <td>
                 <select class="order-status" onchange="updateOrderStatus(${o.id}, this.value)">
@@ -736,10 +812,10 @@ function renderAdminOrders(orders) {
                     <option value="cancelled" ${o.status === 'cancelled' ? 'selected' : ''}>Отменён</option>
                 </select>
             </td>
-            <td>${new Date(o.created_at).toLocaleDateString('ru-RU')}</td>
+            <td>${orderDate.toLocaleDateString('ru-RU')} ${orderDate.toLocaleTimeString('ru-RU', {hour: '2-digit', minute:'2-digit'})}</td>
             <td><button class="action-btn edit" onclick="viewOrder(${o.id})">Просмотр</button></td>
         </tr>
-    `).join('');
+    `}).join('');
     
     updateStats();
 }
@@ -758,7 +834,9 @@ function updateStats() {
     }
     
     if (todayOrders || revenue) {
-        fetch('http://localhost:3000/api/orders')
+        fetch('http://localhost:3000/api/orders', {
+            headers: getAuthHeaders()  // ✅ ОТПРАВЛЯЕМ ТОКЕН
+        })
             .then(res => res.json())
             .then(orders => {
                 const today = new Date().toDateString();
@@ -774,19 +852,17 @@ function updateStats() {
 window.openAddProductModal = async () => {
     const name = prompt('Название товара:');
     if (!name) return;
-    
     const price = parseFloat(prompt('Цена:'));
     if (isNaN(price)) { showNotification('Некорректная цена', 'error'); return; }
-    
     const emoji = prompt('Эмодзи (например 🍎):', '📦');
     const category = prompt('Категория (fruits, dairy, bakery, drinks, other):', 'other');
     const weight = prompt('Вес:', '1 шт');
     const stock = parseInt(prompt('Количество на складе:', '10'));
-    
+
     try {
         const response = await fetch('http://localhost:3000/api/products', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),  // ✅ ОТПРАВЛЯЕМ ТОКЕН
             body: JSON.stringify({ name, price, emoji, category, weight, stock })
         });
         const result = await response.json();
@@ -820,7 +896,7 @@ window.editProduct = async (id) => {
         
         const responseUpdate = await fetch(`http://localhost:3000/api/products/${id}`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),  // ✅ ОТПРАВЛЯЕМ ТОКЕН
             body: JSON.stringify({ 
                 name: newName, 
                 price: newPrice, 
@@ -845,9 +921,11 @@ window.editProduct = async (id) => {
 
 window.deleteProduct = async (id) => {
     if (!confirm('Удалить товар? Это действие нельзя отменить.')) return;
-    
     try {
-        const response = await fetch(`http://localhost:3000/api/products/${id}`, { method: 'DELETE' });
+        const response = await fetch(`http://localhost:3000/api/products/${id}`, { 
+            method: 'DELETE',
+            headers: getAuthHeaders()  // ✅ ОТПРАВЛЯЕМ ТОКЕН
+        });
         const result = await response.json();
         
         if (result.success) {
@@ -865,7 +943,7 @@ window.updateOrderStatus = async (orderId, status) => {
     try {
         const response = await fetch(`http://localhost:3000/api/orders/${orderId}/status`, {
             method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
+            headers: getAuthHeaders(),  // ✅ ОТПРАВЛЯЕМ ТОКЕН
             body: JSON.stringify({ status })
         });
         const result = await response.json();
@@ -882,7 +960,9 @@ window.updateOrderStatus = async (orderId, status) => {
 
 window.viewOrder = async (orderId) => {
     try {
-        const response = await fetch('http://localhost:3000/api/orders');
+        const response = await fetch('http://localhost:3000/api/orders', {
+            headers: getAuthHeaders()  // ✅ ОТПРАВЛЯЕМ ТОКЕН
+        });
         const orders = await response.json();
         const order = orders.find(o => o.id === orderId);
         
@@ -898,6 +978,7 @@ window.logout = () => {
     localStorage.removeItem('userRole');
     localStorage.removeItem('isLoggedIn');
     localStorage.removeItem('userEmail');
+    localStorage.removeItem('authToken');
     showNotification('Выход выполнен');
     setTimeout(() => { window.location.href = 'main.html'; }, 1000);
 };
