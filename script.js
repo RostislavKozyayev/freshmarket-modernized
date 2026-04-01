@@ -22,6 +22,7 @@ const elements = {
 };
 
 /* ===== INITIALIZATION ===== */
+// Инициализация приложения после загрузки DOM
 document.addEventListener('DOMContentLoaded', () => {
     cacheElements();
     loadCartFromStorage();
@@ -49,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 });
 
+// Кэширование часто используемых DOM-элементов
 function cacheElements() {
     elements.productsGrid = document.getElementById('productsGrid');
     elements.cartCount = document.getElementById('cartCount');
@@ -65,6 +67,7 @@ function cacheElements() {
 }
 
 /* ===== HAMBURGER MENU ===== */
+// Настройка мобильного меню-гамбургера
 function setupHamburger() {
     const hamburger = document.getElementById('hamburger');
     const navMenu = document.querySelector('.nav-menu');
@@ -93,7 +96,8 @@ function setupHamburger() {
     });
 }
 
-/* ===== ANCHOR SCROLL ON LOAD ===== */
+/* ===== ANCHOR SCROLL ===== */
+// Плавная прокрутка к якорю при загрузке страницы
 function handleAnchorScroll() {
     const hash = window.location.hash;
     if (!hash) return;
@@ -106,6 +110,7 @@ function handleAnchorScroll() {
 }
 
 /* ===== PAGE NAVIGATION ===== */
+// Управление активной навигацией в зависимости от текущей страницы
 function setupPageNavigation() {
     const currentPage = window.location.pathname.split('/').pop() || 'main.html';
     const hash = window.location.hash;
@@ -124,6 +129,7 @@ function setupPageNavigation() {
     }
 }
 
+// Установка активной ссылки навигации
 function setActiveLink(sectionId) {
     elements.navLinks.forEach(link => {
         link.classList.remove('active');
@@ -141,6 +147,7 @@ function setActiveLink(sectionId) {
 }
 
 /* ===== SCROLL SPY ===== */
+// Подсветка активной секции при прокрутке страницы
 function setupScrollSpy() {
     const currentPage = window.location.pathname.split('/').pop() || 'main.html';
     if (currentPage !== 'main.html' && currentPage !== 'index.html' && currentPage !== '') return;
@@ -192,7 +199,8 @@ function setupScrollSpy() {
     });
 }
 
-/* ===== PRODUCT DISPLAY (API) ===== */
+/* ===== PRODUCT DISPLAY ===== */
+// Загрузка товаров из API
 async function loadProducts() {
     try {
         const response = await fetch(`${API_URL}/products`);
@@ -205,6 +213,7 @@ async function loadProducts() {
     }
 }
 
+// Отрисовка карточек товаров
 function displayProducts(productsToDisplay) {
     if (!elements.productsGrid) return;
     elements.productsGrid.innerHTML = productsToDisplay.map(product => `
@@ -219,6 +228,7 @@ function displayProducts(productsToDisplay) {
 }
 
 /* ===== FILTERS ===== */
+// Настройка фильтров и поиска
 function setupFilters() {
     const searchInput = document.getElementById('searchInput');
     const categoryFilter = document.getElementById('categoryFilter');
@@ -233,6 +243,7 @@ function setupFilters() {
     if (resetBtn) resetBtn.addEventListener('click', resetFilters);
 }
 
+// Фильтрация товаров по поиску, категории и цене
 function filterProducts() {
     const searchTerm = document.getElementById('searchInput')?.value.toLowerCase() || '';
     const activeCategory = document.getElementById('categoryFilter')?.value || 'all';
@@ -251,11 +262,13 @@ function filterProducts() {
     toggleEmptyState(filtered.length === 0);
 }
 
+// Обновление счётчика найденных товаров
 function updateResultsCount(count) {
     const el = document.getElementById('resultsCount');
     if (el) el.textContent = count;
 }
 
+// Показать или скрыть состояние пустого результата
 function toggleEmptyState(isEmpty) {
     const emptyState = document.getElementById('emptyState');
     const productsGrid = document.getElementById('productsGrid');
@@ -264,6 +277,7 @@ function toggleEmptyState(isEmpty) {
     productsGrid.style.display = isEmpty ? 'none' : 'grid';
 }
 
+// Сброс всех фильтров
 window.resetFilters = () => {
     const searchInput = document.getElementById('searchInput');
     const categoryFilter = document.getElementById('categoryFilter');
@@ -279,6 +293,7 @@ window.resetFilters = () => {
     showNotification('Фильтры сброшены');
 };
 
+// Debounce для ограничения частоты вызовов
 function debounce(func, wait) {
     let timeout;
     return function(...args) {
@@ -288,6 +303,7 @@ function debounce(func, wait) {
 }
 
 /* ===== CART ===== */
+// Добавление товара в корзину
 window.addToCart = (id) => {
     const product = products.find(p => p.id === id);
     if (!product) return;
@@ -302,12 +318,14 @@ window.addToCart = (id) => {
     showNotification(`${product.name} добавлен в корзину`);
 };
 
+// Удаление товара из корзины
 window.removeFromCart = (id) => {
     cart = cart.filter(item => item.id !== id);
     updateCartUI();
     saveCartToStorage();
 };
 
+// Изменение количества товара в корзине
 window.updateQuantity = (id, change) => {
     const item = cart.find(item => item.id === id);
     if (!item) return;
@@ -320,12 +338,14 @@ window.updateQuantity = (id, change) => {
     }
 };
 
+// Обновление отображения корзины
 function updateCartUI() {
     const totalItems = cart.reduce((sum, item) => sum + item.quantity, 0);
     if (elements.cartCount) elements.cartCount.textContent = totalItems;
     renderCartItems();
 }
 
+// Отрисовка элементов корзины
 function renderCartItems() {
     if (!elements.cartItems) return;
     if (cart.length === 0) {
@@ -359,7 +379,8 @@ function renderCartItems() {
     if (elements.cartTotal) elements.cartTotal.textContent = `${total} ₽`;
 }
 
-/* ===== CHECKOUT (API) ===== */
+/* ===== CHECKOUT ===== */
+// Оформление заказа через API
 window.checkout = async () => {
     if (cart.length === 0) {
         showNotification('Корзина пуста!', 'error');
@@ -404,19 +425,22 @@ window.checkout = async () => {
 };
 
 /* ===== MODAL ===== */
+// Открытие модального окна корзины
 function openModal() {
     if (!elements.cartModal) return;
     elements.cartModal.style.display = 'block';
     document.body.style.overflow = 'hidden';
 }
 
+// Закрытие модального окна корзины
 function closeModal() {
     if (!elements.cartModal) return;
     elements.cartModal.style.display = 'none';
     document.body.style.overflow = '';
 }
 
-/* ===== AUTH (API) ===== */
+/* ===== AUTH ===== */
+// Обработка формы входа
 async function handleLogin(e) {
     e.preventDefault();
     const email = document.getElementById('email').value.trim();
@@ -456,6 +480,7 @@ async function handleLogin(e) {
     }
 }
 
+// Получение заголовков авторизации для API-запросов
 function getAuthHeaders() {
     const token = localStorage.getItem('authToken');
     return {
@@ -464,6 +489,7 @@ function getAuthHeaders() {
     };
 }
 
+// Переключение видимости пароля
 window.togglePassword = () => {
     const input = document.getElementById('password');
     const toggle = document.querySelector('.toggle-password');
@@ -472,6 +498,7 @@ window.togglePassword = () => {
     if (toggle) toggle.textContent = isText ? 'Показать' : 'Скрыть';
 };
 
+// Переключение видимости пароля для регистрации
 window.toggleRegPassword = (inputId, btn) => {
     const input = document.getElementById(inputId);
     if (!input) return;
@@ -480,7 +507,8 @@ window.toggleRegPassword = (inputId, btn) => {
     btn.textContent = isText ? 'Показать' : 'Скрыть';
 };
 
-/* ===== REGISTER FORM (API) ===== */
+/* ===== REGISTER FORM ===== */
+// Обработка формы регистрации
 (function setupRegisterForm() {
     const form = document.getElementById('registerForm');
     if (!form) return;
@@ -538,6 +566,7 @@ window.toggleRegPassword = (inputId, btn) => {
     });
 })();
 
+// Проверка статуса авторизации пользователя
 function checkAuth() {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     const email = localStorage.getItem('userEmail');
@@ -561,6 +590,7 @@ function checkAuth() {
     }
 }
 
+// Выход из системы
 window.logout = () => {
     localStorage.removeItem('userRole');
     localStorage.removeItem('isLoggedIn');
@@ -570,6 +600,7 @@ window.logout = () => {
     setTimeout(() => { window.location.href = 'main.html'; }, 1000);
 };
 
+// Переход в админ-панель с проверкой прав
 window.goToAdmin = () => {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     const userRole = localStorage.getItem('userRole');
@@ -585,11 +616,13 @@ window.goToAdmin = () => {
     window.location.href = 'admin.html';
 };
 
+// Показать дополнительную информацию
 window.showMore = () => {
-    alert('FreshMarket — это сервис быстрой доставки свежих продуктов.\n\n✅ Доставка за 15 минут\n✅ Только свежие продукты\n✅ Удобное приложение\n✅ Выгодные цены');
+    alert('FreshMarket — это сервис быстрой доставки свежих продуктов.\n\nДоставка за 15 минут\nТолько свежие продукты\nУдобное приложение\nВыгодные цены');
 };
 
 /* ===== EVENT LISTENERS ===== */
+// Настройка обработчиков событий
 function setupEventListeners() {
     if (elements.cartBtn) elements.cartBtn.addEventListener('click', openModal);
     if (elements.closeBtn) elements.closeBtn.addEventListener('click', closeModal);
@@ -618,6 +651,7 @@ function setupEventListeners() {
 }
 
 /* ===== HERO ANIMATION ===== */
+// Анимация плавающих элементов на главной странице
 function setupHeroAnimation() {
     const heroVisual = document.querySelector('.hero-visual');
     const items = document.querySelectorAll('.item');
@@ -644,7 +678,8 @@ function setupHeroAnimation() {
     });
 }
 
-/* ===== ADMIN PANEL (API) ===== */
+/* ===== ADMIN PANEL ===== */
+// Проверка доступа к админ-панели
 function checkAdminAccess() {
     const isLoggedIn = localStorage.getItem('isLoggedIn');
     const userRole = localStorage.getItem('userRole');
@@ -656,6 +691,7 @@ function checkAdminAccess() {
     return true;
 }
 
+// Переключение между секциями админ-панели
 function showAdminSection(section) {
     const productsSection = document.getElementById('productsSection');
     const ordersSection = document.getElementById('ordersSection');
@@ -679,6 +715,7 @@ function showAdminSection(section) {
     else if (section === 'orders') loadAdminOrders();
 }
 
+// Загрузка товаров для админ-панели
 async function loadAdminProducts() {
     try {
         const response = await fetch('http://localhost:3000/api/products');
@@ -694,6 +731,7 @@ async function loadAdminProducts() {
     }
 }
 
+// Отрисовка таблицы товаров
 function renderAdminProducts(products) {
     const tbody = document.getElementById('productsTableBody');
     if (!tbody) return;
@@ -713,6 +751,7 @@ function renderAdminProducts(products) {
     updateStats();
 }
 
+// Загрузка заказов для админ-панели
 async function loadAdminOrders() {
     try {
         const response = await fetch('http://localhost:3000/api/orders', { headers: getAuthHeaders() });
@@ -728,6 +767,7 @@ async function loadAdminOrders() {
     }
 }
 
+// Отрисовка таблицы заказов
 function renderAdminOrders(orders) {
     const tbody = document.getElementById('ordersTableBody');
     if (!tbody) return;
@@ -749,6 +789,7 @@ function renderAdminOrders(orders) {
     updateStats();
 }
 
+// Обновление статистики админ-панели
 function updateStats() {
     const totalProducts = document.getElementById('totalProducts');
     const todayOrders = document.getElementById('todayOrders');
@@ -771,6 +812,7 @@ function updateStats() {
     }
 }
 
+// Добавление нового товара
 window.openAddProductModal = async () => {
     const name = prompt('Название товара:');
     if (!name) return;
@@ -799,6 +841,7 @@ window.openAddProductModal = async () => {
     }
 };
 
+// Редактирование товара
 window.editProduct = async (id) => {
     try {
         const response = await fetch('http://localhost:3000/api/products');
@@ -829,6 +872,7 @@ window.editProduct = async (id) => {
     }
 };
 
+// Удаление товара
 window.deleteProduct = async (id) => {
     if (!confirm('Удалить товар? Это действие нельзя отменить.')) return;
     try {
@@ -845,6 +889,7 @@ window.deleteProduct = async (id) => {
     }
 };
 
+// Обновление статуса заказа
 window.updateOrderStatus = async (orderId, status) => {
     try {
         const response = await fetch(`http://localhost:3000/api/orders/${orderId}/status`, {
@@ -863,6 +908,7 @@ window.updateOrderStatus = async (orderId, status) => {
     }
 };
 
+// Просмотр деталей заказа
 window.viewOrder = async (orderId) => {
     try {
         const response = await fetch('http://localhost:3000/api/orders', { headers: getAuthHeaders() });
@@ -875,7 +921,7 @@ window.viewOrder = async (orderId) => {
     }
 };
 
-// ✅ ЭКСПОРТ ФУНКЦИЙ В ГЛОБАЛЬНУЮ ОБЛАСТЬ ВИДИМОСТИ
+// Экспорт функций админ-панели в глобальную область видимости
 window.showAdminSection = showAdminSection;
 window.checkAdminAccess = checkAdminAccess;
 window.loadAdminProducts = loadAdminProducts;
@@ -891,10 +937,12 @@ window.viewOrder = viewOrder;
 window.logout = logout;
 
 /* ===== LOCAL STORAGE ===== */
+// Сохранение корзины в localStorage
 function saveCartToStorage() {
     localStorage.setItem('freshmarket_cart', JSON.stringify(cart));
 }
 
+// Загрузка корзины из localStorage
 function loadCartFromStorage() {
     const saved = localStorage.getItem('freshmarket_cart');
     if (saved) {
@@ -904,6 +952,7 @@ function loadCartFromStorage() {
 }
 
 /* ===== NOTIFICATIONS ===== */
+// Показ уведомления пользователю
 function showNotification(message, type = 'success') {
     const notification = document.createElement('div');
     notification.className = 'toast-notification' + (type === 'error' ? ' toast-error' : '');
@@ -918,6 +967,7 @@ function showNotification(message, type = 'success') {
 }
 
 /* ===== ANIMATION STYLES ===== */
+// Инъекция стилей для уведомлений
 const animStyle = document.createElement('style');
 animStyle.textContent = `.toast-notification { position: fixed; top: 100px; right: 20px; background: var(--primary); color: #fff; padding: 14px 22px; border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.18); z-index: 10000; font-weight: 600; font-size: 15px; transform: translateX(440px); transition: transform .35s cubic-bezier(.175,.885,.32,1.275), opacity .35s ease; opacity: 0; max-width: calc(100vw - 40px); } .toast-notification.toast-error { background: #e53e3e; } .toast-visible { transform: translateX(0); opacity: 1; }`;
 document.head.appendChild(animStyle);

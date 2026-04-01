@@ -115,7 +115,7 @@ db.serialize(() => {
 
 // ===== API ENDPOINTS =====
 
-// 📦 GET /api/products
+// GET /api/products
 app.get('/api/products', (req, res) => {
     db.all('SELECT id, name, price, emoji, category, weight, stock FROM products', [], (err, rows) => {
         if (err) {
@@ -126,7 +126,7 @@ app.get('/api/products', (req, res) => {
     });
 });
 
-// 📦 POST /api/products (Admin)
+// POST /api/products (Admin)
 app.post('/api/products', requireAdmin, (req, res) => {
     const { name, price, emoji, category, weight, stock } = req.body;
     const errors = validateProduct({ name, price, stock, category });
@@ -145,7 +145,7 @@ app.post('/api/products', requireAdmin, (req, res) => {
     );
 });
 
-// 📦 PUT /api/products/:id (Admin)
+// PUT /api/products/:id (Admin)
 app.put('/api/products/:id', requireAdmin, (req, res) => {
     const { name, price, emoji, category, weight, stock } = req.body;
     const errors = validateProduct({ name, price, stock, category });
@@ -164,7 +164,7 @@ app.put('/api/products/:id', requireAdmin, (req, res) => {
     );
 });
 
-// 📦 DELETE /api/products/:id (Admin)
+// DELETE /api/products/:id (Admin)
 app.delete('/api/products/:id', requireAdmin, (req, res) => {
     db.run(`DELETE FROM products WHERE id=?`, [req.params.id], function(err) {
         if (err) {
@@ -175,7 +175,7 @@ app.delete('/api/products/:id', requireAdmin, (req, res) => {
     });
 });
 
-// 🔐 POST /api/login
+// POST /api/login
 app.post('/api/login', (req, res) => {
     const { email, password, role } = req.body;
     if (role === 'admin') {
@@ -215,7 +215,7 @@ app.post('/api/login', (req, res) => {
     });
 });
 
-// 🔐 POST /api/register
+// POST /api/register
 app.post('/api/register', (req, res) => {
     const { name, email, password, role } = req.body;
     if (!email || !password) {
@@ -248,7 +248,7 @@ app.post('/api/register', (req, res) => {
     });
 });
 
-// 🛒 POST /api/orders
+// POST /api/orders
 app.post('/api/orders', (req, res) => {
     const { userId, items, total } = req.body;
     if (!items || !Array.isArray(items) || items.length === 0) {
@@ -274,7 +274,7 @@ app.post('/api/orders', (req, res) => {
     });
 });
 
-// 🛒 GET /api/orders (Admin) - ТОЛЬКО ОДИН РАЗ
+// GET /api/orders (Admin) - ТОЛЬКО ОДИН РАЗ
 app.get('/api/orders', requireAdmin, (req, res) => {
     db.all(`SELECT o.*, u.email as customer FROM orders o LEFT JOIN users u ON o.user_id = u.id ORDER BY o.created_at DESC`, [], (err, rows) => {
         if (err) {
@@ -285,7 +285,7 @@ app.get('/api/orders', requireAdmin, (req, res) => {
     });
 });
 
-// 🛒 PUT /api/orders/:id/status (Admin)
+// PUT /api/orders/:id/status (Admin)
 app.put('/api/orders/:id/status', requireAdmin, (req, res) => {
     const { status } = req.body;
     const validStatuses = ['new', 'processing', 'delivered', 'cancelled'];
@@ -301,7 +301,7 @@ app.put('/api/orders/:id/status', requireAdmin, (req, res) => {
     });
 });
 
-// 👤 GET /api/users/me - Получить пользователя по email
+// GET /api/users/me - Получить пользователя по email
 app.get('/api/users/me', (req, res) => {
     const email = req.query.email;
     if (!email) {
