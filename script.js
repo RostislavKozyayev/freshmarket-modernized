@@ -455,7 +455,7 @@ async function handleLogin(e) {
     if (errorDiv) errorDiv.classList.remove('show');
     
     try {
-        const response = await fetch('${API_URL}/login', {
+        const response = await fetch(`${API_URL}/login`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password, role })
@@ -541,7 +541,7 @@ window.toggleRegPassword = (inputId, btn) => {
         }
         
         try {
-            const response = await fetch('${API_URL}/register', {
+            const response = await fetch(`${API_URL}/register`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ name, email, password, role: 'customer' })
@@ -718,7 +718,7 @@ function showAdminSection(section) {
 // Загрузка товаров для админ-панели
 async function loadAdminProducts() {
     try {
-        const response = await fetch('${API_URL}/products');
+        const response = await fetch(`${API_URL}/products`);
         if (!response.ok) throw new Error('Server error');
         const products = await response.json();
         renderAdminProducts(products);
@@ -754,7 +754,7 @@ function renderAdminProducts(products) {
 // Загрузка заказов для админ-панели
 async function loadAdminOrders() {
     try {
-        const response = await fetch('${API_URL}/orders', { headers: getAuthHeaders() });
+        const response = await fetch(`${API_URL}/orders`, { headers: getAuthHeaders() });
         if (!response.ok) throw new Error('Server error: ' + response.status);
         const orders = await response.json();
         renderAdminOrders(orders);
@@ -796,13 +796,13 @@ function updateStats() {
     const revenue = document.getElementById('revenue');
     
     if (totalProducts) {
-        fetch('${API_URL}/products').then(res => res.json()).then(products => {
+        fetch(`${API_URL}/products`).then(res => res.json()).then(products => {
             totalProducts.textContent = products.length;
         });
     }
     
     if (todayOrders || revenue) {
-        fetch('${API_URL}/orders', { headers: getAuthHeaders() }).then(res => res.json()).then(orders => {
+        fetch(`${API_URL}/orders`, { headers: getAuthHeaders() }).then(res => res.json()).then(orders => {
             const today = new Date().toDateString();
             const todayOrdersCount = orders.filter(o => new Date(o.created_at).toDateString() === today).length;
             const totalRevenue = orders.reduce((sum, o) => sum + o.total, 0);
@@ -824,7 +824,7 @@ window.openAddProductModal = async () => {
     const stock = parseInt(prompt('Количество на складе:', '10'));
     
     try {
-        const response = await fetch('${API_URL}/products', {
+        const response = await fetch(`${API_URL}/products`, {
             method: 'POST',
             headers: getAuthHeaders(),
             body: JSON.stringify({ name, price, emoji, category, weight, stock })
@@ -844,7 +844,7 @@ window.openAddProductModal = async () => {
 // Редактирование товара
 window.editProduct = async (id) => {
     try {
-        const response = await fetch('${API_URL}/products');
+        const response = await fetch(`${API_URL}/products`);
         const products = await response.json();
         const product = products.find(p => p.id === id);
         if (!product) { showNotification('Товар не найден', 'error'); return; }
@@ -911,7 +911,7 @@ window.updateOrderStatus = async (orderId, status) => {
 // Просмотр деталей заказа
 window.viewOrder = async (orderId) => {
     try {
-        const response = await fetch('${API_URL}/orders', { headers: getAuthHeaders() });
+        const response = await fetch(`${API_URL}/orders`, { headers: getAuthHeaders() });
         const orders = await response.json();
         const order = orders.find(o => o.id === orderId);
         if (!order) { showNotification('Заказ не найден', 'error'); return; }
