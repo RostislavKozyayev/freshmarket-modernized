@@ -320,8 +320,9 @@ app.get('/api/users/me', (req, res) => {
 });
 
 // ===== ЗАПУСК СЕРВЕРА =====
-app.listen(PORT, () => {
-    console.log(`🚀 Сервер запущен: http://localhost:${PORT}/main.html`);
+const HOST = process.env.HOST || '0.0.0.0';
+app.listen(PORT, HOST, () => {
+    console.log(`🚀 Сервер запущен: http://${HOST === '0.0.0.0' ? 'localhost' : HOST}:${PORT}/main.html`);
 });
 
 process.on('SIGINT', () => {

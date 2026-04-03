@@ -1,20 +1,19 @@
 {
-  "name": "shop-modernized",
+  "name": "freshmarket",
   "version": "1.0.0",
-  "description": "",
-  "main": "script.js",
+  "description": "Интернет-магазин свежих продуктов",
+  "main": "server.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node server.js",
+    "seed": "node seed.js"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "type": "commonjs",
   "dependencies": {
-    "bcrypt": "^6.0.0",
-    "body-parser": "^2.2.2",
-    "cors": "^2.8.6",
-    "express": "^5.2.1",
-    "sqlite3": "^6.0.1"
+    "express": "^4.18.2",
+    "sqlite3": "^5.1.6",
+    "cors": "^2.8.5",
+    "bcrypt": "^5.1.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
